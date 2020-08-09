@@ -1,0 +1,21 @@
+{
+  "name": "TaskManagerIO",
+  "keywords": "Simple task manager for Arduino and mbed with marshalled interrupts, full event support and timed execution",
+  "description": "Simple efficient task management with interrupt marshalling. Provides the ability to schedule things to be done either at certain times or when events occur. This library can also marshall interrupts into task manager tasks",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davetcc/TaskManagerIO"
+  },
+  "authors": [
+    {
+      "name": "DaveTcc",
+      "url": "https://www.thecoderscorner.com",
+      "maintainer": true
+    }
+  ],
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "frameworks": "arduino, mbed",
+  "platforms": "*"
+}
+  
