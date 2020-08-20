@@ -104,7 +104,7 @@ public:
     /**
      * @return the task manager ID for this event, for making calls into task manager.
      */
-    taskid_t getTaskId() {
+    taskid_t getTaskId() const {
         return taskId;
     }
 };
@@ -114,26 +114,18 @@ public:
  */
 typedef void (*TimerFn)();
 
-/**
- * Definition of a function to be called back when an interrupt is detected, marshalled by task manager into a task.
- * The pin that caused the interrupt is passed in the parameter on a best efforts basis.
- * @param pin the pin on which the interrupt occurred (best efforts)
- */
-typedef void (*InterruptFn)(pinid_t pin);
-
-#define TASK_IN_USE     0x80000000U
+#define TASK_RUNNING    0x80000000U
 #define TASK_REPEATING  0x40000000U
 #define TASK_MILLIS     0x20000000U
 #define TASK_SECONDS    0x10000000U
 #define TASK_MICROS     0x00000000U
 #define TIMING_MASKING  0x30000000U
-#define TASK_RUNNING    0x08000000U
-#define TIMER_MASK      0x01ffffffU
+#define TIMER_MASK      0x0fffffffU
 
-#define isJobMicros(x)  ((x & TIMING_MASKING)==0)
-#define isJobMillis(x)  ((x & TIMING_MASKING)==0x2000U)
-#define isJobSeconds(x) ((x & TIMING_MASKING)==0x1000U)
-#define timeFromExecInfo(x) ((x & TIMER_MASK))
+#define isJobMicros(x)  (((x) & TIMING_MASKING)==TASK_MICROS)
+#define isJobMillis(x)  (((x) & TIMING_MASKING)==TASK_MILLIS)
+#define isJobSeconds(x) (((x) & TIMING_MASKING)==TASK_MICROS)
+#define timeFromExecInfo(x) (((x) & TIMER_MASK))
 
 /**
  * The time units that can be used with the schedule calls.
@@ -166,14 +158,15 @@ private:
         Executable *taskRef;
         BaseEvent *eventRef;
     };
-    TimerTask* volatile next;
+    tm_internal::TimerTaskAtomicPtr next;
+    tm_internal::TmAtomicBool taskInUse;
     volatile ExecutionType executeMode;
 public:
     TimerTask();
 
-    bool isReady() const;
+    bool isReady();
 
-    unsigned long microsFromNow() const;
+    unsigned long microsFromNow();
 
     void initialise(uint32_t executionInfo, TimerFn execCallback);
 
@@ -181,7 +174,7 @@ public:
 
     void initialiseEvent(BaseEvent *event, bool deleteWhenDone);
 
-    bool isInUse() const { return 0 != (executionInfo & TASK_IN_USE); }
+    bool isInUse() { return tm_internal::atomicReadBool(&taskInUse); }
 
     bool isRepeating() const {
         if(ExecutionType(executeMode & EXECTYPE_MASK) == EXECTYPE_EVENT) {
@@ -196,20 +189,24 @@ public:
 
     void clear();
 
+    bool allocateIfPossible() {
+        return tm_internal::atomicSwapBool(&taskInUse, false, true);
+    }
+
     void markRunning() { executionInfo |= TASK_RUNNING; }
 
     void clearRunning() { executionInfo &= ~TASK_RUNNING; }
 
     bool isRunning() const { return (executionInfo & TASK_RUNNING) != 0; }
 
-    bool isEvent() const {
+    bool isEvent() {
         auto execType = ExecutionType(executeMode & EXECTYPE_MASK);
         return (isInUse() && execType == EXECTYPE_EVENT);
     }
 
-    TimerTask *getNext() { return next; }
+    TimerTask *getNext() { return tm_internal::atomicReadPtr(&next); }
 
-    void setNext(TimerTask *nextTask) { this->next = nextTask; }
+    void setNext(TimerTask *nextTask) { tm_internal::atomicWritePtr(&this->next, nextTask); }
 
     void execute();
 

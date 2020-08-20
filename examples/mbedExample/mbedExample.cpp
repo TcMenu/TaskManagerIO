@@ -9,7 +9,7 @@
 #include <TaskManagerIO.h>
 
 // Here we create a serial object to write log statements to.
-Serial console(USBTX, USBRX);
+BufferedSerial console(USBTX, USBRX, 115200);
 
 // and we also store the taskId of the one second task, to remove it later.
 taskid_t oneSecondTask;
@@ -21,7 +21,7 @@ private:
     int ticks{};
 public:
     // This is called by task manager when the task is ready to run.
-    void exec() override {
+    void exec() {//override {
         ticks++;
     }
 
@@ -33,20 +33,39 @@ public:
 // here we store a reference to the microsecond task.
 MicrosecondTask* microsTask;
 
+void log(const char* toLog) {
+    console.write(toLog, strlen(toLog));
+    char sz[2];
+    sz[0]='\n';
+    sz[1]=0;
+    console.write(sz, strlen(sz));
+}
+
+void log(const char* toLog, int i) {
+    console.write(toLog, strlen(toLog));
+    char sz[20];
+    itoa(i, sz, 10);
+    console.write(sz, strlen(sz));
+    sz[0]='\n';
+    sz[1]=0;
+    console.write(sz, strlen(sz));
+}
+
 // A job submitted to taskManager can either be a function that returns void and takes no parameters, or a class
 // that extends Executable. In this case the job creates a repeating task and logs to the console.
 void tenSecondJob() {
-    console.printf("30 seconds up, restart a new repeating job\n");
-    taskManager.scheduleFixedRate(500, [] {
-        console.printf("Half second job, micro count = %d\n", microsTask->getCurrentTicks());
-    });
+    log("30 seconds up, restart a new repeating job");
+//    taskManager.scheduleFixedRate(500, [] {
+//        log("Half second job");
+//        console.write("Micros = ", microsTask.getCurrentTicks());
+//    });
 }
 
 // Again another task manager function, we pass this as the timerFn argument later on
 void twentySecondJob() {
-    console.printf("20 seconds up, delete 1 second job, schedule 10 second job\n");
-    taskManager.scheduleOnce(10, tenSecondJob, TIME_SECONDS);
-    taskManager.cancelTask(oneSecondTask);
+    log("20 seconds up, delete 1 second job, schedule 10 second job");
+//    taskManager.scheduleOnce(10, tenSecondJob, TIME_SECONDS);
+//    taskManager.cancelTask(oneSecondTask);
 }
 
 //
@@ -56,23 +75,22 @@ void setupTasks() {
     // Here we create a new task using milliseconds; which is the default time unit for scheduling. We use a lambda
     // function as the means of scheduling.
     oneSecondTask = taskManager.scheduleFixedRate(1000, [] {
-        console.printf("One second job, micro count = %d\n", microsTask->getCurrentTicks());
+        log("One second job, micro count", microsTask->getCurrentTicks());
     });
-
-    // Here we create a new task based on the twentySecondJob function, that will be called at the appropriate time
-    // We schedule this with a unit of seconds.
-    taskManager.scheduleOnce(20, twentySecondJob, TIME_SECONDS);
-
-    // here we create a new task based on Executable and pass it to taskManager for scheduling. We provide the
-    // time unit as microseconds, and with the last parameter we tell task manager to delete it when the task
-    // is done, IE for one shot tasks that is as soon as it's done, for repeating tasks when it's cancelled.
-    microsTask = new MicrosecondTask();
-    taskManager.scheduleFixedRate(100, microsTask, TIME_MICROS, true);
+//
+//    // Here we create a new task based on the twentySecondJob function, that will be called at the appropriate time
+//    // We schedule this with a unit of seconds.
+//    taskManager.scheduleOnce(20, twentySecondJob, TIME_SECONDS);
+//
+//    // here we create a new task based on Executable and pass it to taskManager for scheduling. We provide the
+//    // time unit as microseconds, and with the last parameter we tell task manager to delete it when the task
+//    // is done, IE for one shot tasks that is as soon as it's done, for repeating tasks when it's cancelled.
+//    microsTask = new MicrosecondTask();
+//    taskManager.scheduleFixedRate(100, microsTask, TIME_MICROS, true);
 }
 
 int main() {
-    console.baud(115200);
-
+    log("starting up taskmanager example");
     setupTasks();
 
     while(1) {

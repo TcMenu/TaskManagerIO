@@ -3,8 +3,8 @@
  * This product is licensed under an Apache license, see the LICENSE file in the top-level directory.
  */
 
-#ifndef _MOCKED_TASK_MANAGER_H_
-#define _MOCKED_TASK_MANAGER_H_
+#ifndef MOCKED_TASK_MANAGER_H
+#define MOCKED_TASK_MANAGER_H
 
 /**
  * @ file MockTaskManager.h
@@ -41,9 +41,8 @@ public:
 
     int getNumberOfYieldCalls() {return numOfYields;}
     uint32_t getYieldTime(int i) {return yieldTimes[i];}
-    volatile TimerTask* getTask(taskid_t i) {return &tasks[i];}
-    int getMaxTaskNo() {return numberOfSlots;}
+    int getMaxTaskNo() {return taskBlocks[numberOfBlocks - 1]->lastSlot();}
     InterruptFn getInterruptFunction() {return interruptCallback;}
 };
 
-#endif // _MOCKED_TASK_MANAGER_H_
+#endif // MOCKED_TASK_MANAGER_H

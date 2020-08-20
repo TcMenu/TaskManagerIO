@@ -5,6 +5,7 @@
 
 #include "TaskPlatformDeps.h"
 #include "TaskManager.h"
+#include "ExecWithParameter.h"
 
 #undef ISR_ATTR
 #if defined(ESP8266)
@@ -15,39 +16,82 @@
 # define ISR_ATTR
 #endif
 
+
 TaskManager taskManager;
 
-ISR_ATTR void TaskManager::markInterrupted(pinid_t interruptNo) {
+class TmSpinLock {
+private:
+    tm_internal::TmAtomicBool* lockObject;
+public:
+    explicit TmSpinLock(tm_internal::TmAtomicBool* toLockOn) : lockObject(toLockOn) {
+        bool locked;
+        int count = 0;
+        do {
+            locked = tm_internal::atomicSwapBool(lockObject, false, true);
+            if(!locked) {
+                yield(); // something else has the lock, let it get control to finish up!
+                if(++count == 1000) tm_internal::tmNotification(tm_internal::TM_WARN_HIGH_SPINCOUNT, TASKMGR_INVALIDID);
+            }
+        } while(!locked);
+    }
+
+    ~TmSpinLock() {
+        if(!tm_internal::atomicSwapBool(lockObject, true, false)) {
+            tm_internal::tmNotification(tm_internal::TM_ERROR_LOCK_FAILURE, TASKMGR_INVALIDID);
+        }
+    }
+};
+
+
+ISR_ATTR void TaskManager::markInterrupted(pintype_t interruptNo) {
 	taskManager.lastInterruptTrigger = interruptNo;
 	taskManager.interrupted = true;
 }
 
-TaskManager::TaskManager() {
-	this->numberOfSlots = DEFAULT_TASK_SIZE;
+TaskManager::TaskManager() : taskBlocks {} {
 	interrupted = false;
-	first = nullptr;
+	tm_internal::atomicWritePtr(&first, nullptr);
 	interruptCallback = nullptr;
 	lastInterruptTrigger = 0;
-	tasks = new TimerTask[DEFAULT_TASK_SIZE];
+	taskBlocks[0] = new TaskBlock(0);
+	numberOfBlocks = 1;
+	tm_internal::atomicWriteBool(&memLockerFlag, false);
+}
+
+TaskManager::~TaskManager() {
+    for(int i=0; i<numberOfBlocks; i++) {
+        delete taskBlocks[i];
+    }
 }
 
 int TaskManager::findFreeTask() {
-	for (taskid_t i = 0; i < numberOfSlots; ++i) {
-		if (!tasks[i].isInUse()) {
-			return i;
-		}
-	}
+    int retries = 0;
+    while(retries < 100) {
+        for (taskid_t i=0; i<numberOfBlocks;i++) {
+            auto taskId = taskBlocks[i]->allocateTask();
+            if(taskId != TASKMGR_INVALIDID) return taskId;
+        }
 
-	int newSlots = numberOfSlots + DEFAULT_TASK_SIZE;
-	auto newTasks = new TimerTask[newSlots];
-	if(newTasks != nullptr) {
-	    int firstNewSlot = numberOfSlots;
-	    memcpy(newTasks, tasks, sizeof(TimerTask) * numberOfSlots);
-	    tasks = newTasks;
-	    numberOfSlots = newSlots;
+        // already full, cannot allocate further.
+        if(numberOfBlocks == DEFAULT_TASK_BLOCKS) {
+            tm_internal::tmNotification(tm_internal::TM_ERROR_FULL, TASKMGR_INVALIDID);
+            return TASKMGR_INVALIDID;
+        }
 
-        return firstNewSlot;
-	}
+        // now we need to take an atomic lock memLockerFlag before proceeding to ensure nobody else is allocating tasks
+        // if two threads come here at once, only one will be able to enter the allocate block, the other will go into
+        // the else block and let other tasks run for a while and then loop again
+        {
+            tm_internal::tmNotification(tm_internal::TM_INFO_REALLOC, TASKMGR_INVALIDID);
+            TmSpinLock spinLock(&memLockerFlag);
+            auto nextIdSpace = taskBlocks[numberOfBlocks - 1]->lastSlot() + 1;
+            taskBlocks[numberOfBlocks] = new TaskBlock(nextIdSpace);
+            numberOfBlocks++;
+        }
+
+        // count up the tries so far to allocate / wait for allocation.
+        retries++;
+    }
 
 	return TASKMGR_INVALIDID;
 }
@@ -61,64 +105,66 @@ inline uint32_t toTimerValue(uint32_t v, TimerUnit unit) {
 }
 
 taskid_t TaskManager::scheduleOnce(uint32_t when, TimerFn timerFunction, TimerUnit timeUnit) {
-    TaskLocker locker;
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
-		tasks[taskId].initialise(toTimerValue(when, timeUnit) | TASK_IN_USE, timerFunction);
-		putItemIntoQueue(&tasks[taskId]);
+        auto task = getTask(taskId);
+        task->initialise(toTimerValue(when, timeUnit), timerFunction);
+		putItemIntoQueue(task);
 	}
 	return taskId;
 }
 
 taskid_t TaskManager::scheduleFixedRate(uint32_t when, TimerFn timerFunction, TimerUnit timeUnit) {
-    TaskLocker locker;
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
-		tasks[taskId].initialise(toTimerValue(when, timeUnit) | TASK_IN_USE | TASK_REPEATING, timerFunction);
-		putItemIntoQueue(&tasks[taskId]);
+        auto task = getTask(taskId);
+        task->initialise(toTimerValue(when, timeUnit) | TASK_REPEATING, timerFunction);
+		putItemIntoQueue(task);
 	}
 	return taskId;
 }
 
 taskid_t TaskManager::scheduleOnce(uint32_t when, Executable* execRef, TimerUnit timeUnit, bool deleteWhenDone) {
-    TaskLocker locker;
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
-		tasks[taskId].initialise(toTimerValue(when, timeUnit) | TASK_IN_USE, execRef, deleteWhenDone);
-		putItemIntoQueue(&tasks[taskId]);
+	    auto task = getTask(taskId);
+		task->initialise(toTimerValue(when, timeUnit) , execRef, deleteWhenDone);
+		putItemIntoQueue(task);
 	}
 	return taskId;
 }
 
 taskid_t TaskManager::scheduleFixedRate(uint32_t when, Executable* execRef, TimerUnit timeUnit, bool deleteWhenDone) {
-    TaskLocker locker;
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
-		tasks[taskId].initialise(toTimerValue(when, timeUnit) | TASK_IN_USE | TASK_REPEATING, execRef, deleteWhenDone);
-		putItemIntoQueue(&tasks[taskId]);
+        auto task = getTask(taskId);
+        task->initialise(toTimerValue(when, timeUnit) | TASK_REPEATING, execRef, deleteWhenDone);
+		putItemIntoQueue(task);
 	}
 	return taskId;
 }
 
 taskid_t TaskManager::registerEvent(BaseEvent *eventToAdd, bool deleteWhenDone) {
-    TaskLocker locker;
     auto taskId = findFreeTask();
     if(taskId != TASKMGR_INVALIDID) {
-        tasks[taskId].initialiseEvent(eventToAdd, deleteWhenDone);
+        auto task = getTask(taskId);
+        task->initialiseEvent(eventToAdd, deleteWhenDone);
+        putItemIntoQueue(task);
     }
     return taskId;
 }
 
-void TaskManager::cancelTask(taskid_t task) {
-    TaskLocker locker;
-	if (task < numberOfSlots) {
-		removeFromQueue(&tasks[task]);
-		tasks[task].clear();
+void TaskManager::cancelTask(taskid_t taskId) {
+    auto task = getTask(taskId);
+    // always create a new task to ensure the task is never, ever cancelled on anything other than the task thread.
+	if (task) {
+	    taskManager.execute(new ExecWith2Parameters<TimerTask*, TaskManager*>([](TimerTask* task, TaskManager* tm) {
+            tm->removeFromQueue(task);
+            task->clear();
+	    }, task, this), true);
 	}
 }
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "LoopDoesntUseConditionVariableInspection"
 void TaskManager::yieldForMicros(uint32_t microsToWait) {
 	yield();
 
@@ -127,16 +173,17 @@ void TaskManager::yieldForMicros(uint32_t microsToWait) {
         runLoop();
 	} while((micros() - microsStart) < microsToWait);
 }
-#pragma clang diagnostic pop
 
 void TaskManager::dealWithInterrupt() {
     interrupted = false;
     if(interruptCallback != nullptr) interruptCallback(lastInterruptTrigger);
 
-    auto task = first;
-    while(task != nullptr) {
-        if(task->isEvent()) task->processEvent();
-        task = task->getNext();
+    auto lastSlot = taskBlocks[numberOfBlocks - 1]->lastSlot() + 1;
+    for(int i=0; i<lastSlot; i++) {
+        auto task = getTask(i);
+        if(task->isInUse() && task->isEvent()) {
+            task->processEvent();
+        }
     }
 }
 
@@ -147,48 +194,49 @@ void TaskManager::runLoop() {
 	// go through the timer (scheduled) tasks in priority order. they are stored
 	// in a linked list ordered by first to be scheduled. So we only go through
 	// these until the first one that isn't ready.
-	TimerTask* tm = first;
+	auto tm = tm_internal::atomicReadPtr(&first);
 	while(tm != nullptr) {
 #if defined(ESP8266) || defined(ESP32)
 	    // here we are making extra sure we are good citizens on ESP boards
 	    yield();
 #endif
-        {
-            // here we start a new block to ensure that we lock while we test if execution is needed and
-            // then find the next task.
-            TaskLocker locker;
-            if (!tm->isReady()) {
-                break;
-            }
-            tm = tm->getNext();
+
+        if (!tm->isReady()) {
+            break;
         }
+        auto next = tm->getNext();
 
         // by here we know that the task is in use. If it's in use nothing will touch it until it's marked as
         // available. We can do this part without a lock, knowing that we are the only thing that will touch
         // the task. We further know that all non-immutable fields on TimerTask are volatile.
         tm->execute();
+        tm = next;
 	}
 }
 
 void TaskManager::putItemIntoQueue(TimerTask* tm) {
+    // we must own the lock before adding to the queue, as someone else could be removing.
+    TmSpinLock spinLock(&memLockerFlag);
+    auto theFirst = tm_internal::atomicReadPtr(&first);
 
 	// shortcut, no first yet, so we are at the top!
-	if (first == nullptr) {
-		first = tm;
-		tm->setNext(nullptr);
+	if (theFirst == nullptr) {
+        tm->setNext(nullptr);
+        tm_internal::atomicWritePtr(&first, tm);
 		return;
 	}
 
 	// if we are the new first..
-	if (first->microsFromNow() > tm->microsFromNow()) {
-		tm->setNext(first);
-		first = tm;
-		return;
+	if (theFirst->microsFromNow() > tm->microsFromNow()) {
+		tm->setNext(nullptr);
+		tm_internal::atomicWritePtr(&first, tm);
+        tm->setNext(theFirst);
+        return;
 	}
 
 	// otherwise we have to find the place in the queue for this item by time
-	TimerTask* current = first->getNext();
-	TimerTask* previous = first;
+	TimerTask* current = theFirst->getNext();
+	TimerTask* previous = theFirst;
 
 	while (current != nullptr) {
 		if (current->microsFromNow() > tm->microsFromNow()) {
@@ -201,23 +249,32 @@ void TaskManager::putItemIntoQueue(TimerTask* tm) {
 	}
 
 	// we are at the end of the queue
+	// always set
+    tm->setNext(nullptr);
 	previous->setNext(tm);
-	tm->setNext(nullptr);
 }
 
 void TaskManager::removeFromQueue(TimerTask* tm) {
-	
-	// shortcut, if we are first, just remove us by getting the next and setting first.
-	if (first == tm) {
-		first = tm->getNext();
-		tm->setNext(nullptr);
+	// Thread Safety notes:
+	// This must never be called on anything other than the task manager thread. There's only two places that this
+	// is used, firstly after execution of a task, this is already on the task manager thread, secondly when used
+	// from cancelTask, this is now marshalled back onto task manager as a task to remove the item.
+
+    // we must own the lock before we can modify the queue, as someone else could otherwise be adding..
+    TmSpinLock spinLock(&memLockerFlag);
+    auto theFirst = tm_internal::atomicReadPtr(&first);
+
+    // shortcut, if we are first, just remove us by getting the next and setting first.
+	if (theFirst == tm) {
+        tm->setNext(nullptr);
+        tm_internal::atomicWritePtr(&first, tm->getNext());
 		return;
 	}
 
 	// otherwise, we have a single linked list, so we need to keep previous and current and
 	// then iterate through each item
-	TimerTask* current = first->getNext();
-	TimerTask* previous = first;
+	TimerTask* current = theFirst->getNext();
+	TimerTask* previous = theFirst;
 
 	while (current != nullptr) {
 
@@ -285,7 +342,7 @@ ISR_ATTR void interruptHandlerOther() {
 	taskManager.markInterrupted(0xff);
 }
 
-void TaskManager::addInterrupt(InterruptAbstraction* ioDevice, pinid_t pin, uint8_t mode) {
+void TaskManager::addInterrupt(InterruptAbstraction* ioDevice, pintype_t pin, uint8_t mode) {
 	if (interruptCallback == nullptr) return;
 
 	switch (pin) {
@@ -314,20 +371,31 @@ void TaskManager::setInterruptCallback(InterruptFn handler) {
 }
 
 char* TaskManager::checkAvailableSlots(char* data, int dataSize) const {
-	taskid_t i;
-	taskid_t slots = numberOfSlots;
-	auto len = min(taskid_t(dataSize - 1), slots);
-	for (i = 0; i < len; ++i) {
-		data[i] = tasks[i].isRepeating() ? 'R' : (tasks[i].isInUse() ? 'U' : 'F');
-		if (tasks[i].isRunning()) data[i] = tolower(data[i]);
+    auto maxLen = min(taskid_t(dataSize - 1), taskBlocks[numberOfBlocks - 1]->lastSlot());
+    int position = 0;
+
+    for(int i=0; i<numberOfBlocks;i++) {
+	    auto last = taskBlocks[i]->lastSlot();
+	    for(int j=taskBlocks[i]->firstSlot(); j < last; j++) {
+	        auto task = taskBlocks[i]->getContainedTask(j);
+            data[position++] = task->isRepeating() ? 'R' : (task->isInUse() ? 'U' : 'F');
+            if (task->isRunning()) data[i] = tolower(data[i]);
+	    }
+	    if(position >= maxLen) break;
 	}
-	data[i] = 0;
+	data[position] = 0;
 	return data;
 }
 
-#ifdef IOA_USE_MBED
+TimerTask *TaskManager::getTask(taskid_t taskId) {
+    for(int i=0; i<numberOfBlocks; i++) {
+        auto possibleTask = taskBlocks[i]->getContainedTask(taskId);
+        if(possibleTask != nullptr) return possibleTask;
+    }
+    return nullptr;
+}
 
-Mutex TaskLocker::taskMutex("task");
+#ifdef IOA_USE_MBED
 
 volatile bool timingStarted = false;
 Timer ioaTimer;

@@ -40,6 +40,13 @@ uint32_t micros();
 typedef void (*RawIntHandler)();
 
 /**
+ * Definition of a function to be called back when an interrupt is detected, marshalled by task manager into a task.
+ * The pin that caused the interrupt is passed in the parameter on a best efforts basis.
+ * @param pin the pin on which the interrupt occurred (best efforts)
+ */
+typedef void (*InterruptFn)(pintype_t pin);
+
+/**
  * Abstracts the method by which interrupts are registered on the platform. Generally speaking this is implemented by
  * all IoAbstractionRef implementations, so having any abstraction means you already have one of these. You can either
  * implement your own variant of this, or use IoAbstraction to do it for you.
@@ -55,7 +62,7 @@ public:
      * @param fn the raw interrupt ISR function
      * @param mode either RISING, FALLING or CHANGE
      */
-    virtual void attachInterrupt(pinid_t pin, RawIntHandler fn, uint8_t mode) = 0;
+    virtual void attachInterrupt(pintype_t pin, RawIntHandler fn, uint8_t mode) = 0;
 };
 
 #ifdef IOA_USE_ARDUINO
@@ -65,11 +72,65 @@ public:
  * interrupt functions. If you are using IoAbstraction, all IoAbstractionRef's implement InterruptAbstraction.
  */
 class BasicArduinoInterruptAbstraction : public InterruptAbstraction {
-    void attachInterrupt(pinid_t pin, RawIntHandler fn, uint8_t mode) override {
+    void attachInterrupt(pintype_t pin, RawIntHandler fn, uint8_t mode) override {
         ::attachInterrupt(pin, fn, mode);
     }
 };
 #endif
+
+/**
+ * This is an internal class, and users of the library generally don't see it.
+ *
+ * Task manager can never deallocate memory that it has already allocated for tasks, this is in order to make thread
+ * safety much easier. Given this we allocate tasks in blocks of DEFAULT_TASK_SIZE and each tranche contains it's start
+ * and end point in the "array". DEFAULT task size is set to 20 on 32 bit hardware where the size is negligible, 10
+ * on MEGA2560 and all other AVR boards default to 6. We allow up to 8 tranches on AVR and up to 16 on 32 bit boards.
+ * This should provide more than enough tasks for most boards.
+ */
+class TaskBlock {
+private:
+    TimerTask tasks[DEFAULT_TASK_SIZE];
+    const taskid_t first;
+    const taskid_t arraySize;
+public:
+    explicit TaskBlock(taskid_t first_) : first(first_), arraySize(DEFAULT_TASK_SIZE) {}
+
+    /**
+     * Checks if taskId is contained within this block
+     * @param task the task ID to check
+     * @return true if contained, otherwise false
+     */
+    bool isTaskContained(taskid_t task) const {
+        return first >= task && task < (first + arraySize);
+    };
+
+    TimerTask* getContainedTask(taskid_t task) {
+        return isTaskContained(task) ? &tasks[task - first] : nullptr;
+    }
+
+    void clearAll() {
+        for(int i=0; i<arraySize;i++) {
+            tasks[i].clear();
+        }
+    }
+
+    taskid_t allocateTask() {
+        for(int i=0; i<arraySize; i++) {
+            if(tasks[i].allocateIfPossible()) {
+                return i + first;
+            }
+        }
+        return TASKMGR_INVALIDID;
+    }
+
+    int lastSlot() const {
+        return first + arraySize - 1;
+    }
+
+    int firstSlot() const {
+        return first;
+    }
+};
 
 /**
  * TaskManager is a lightweight cooperative co-routine implementation for Arduino, it works by scheduling tasks to be
@@ -86,21 +147,26 @@ class BasicArduinoInterruptAbstraction : public InterruptAbstraction {
  */
 class TaskManager {
 protected:
-	TimerTask* volatile tasks;
-	TimerTask* volatile first;
-	volatile taskid_t numberOfSlots;
+    // the memory that holds all the tasks is an array of task blocks, allocated on demand
+	TaskBlock* volatile taskBlocks[DEFAULT_TASK_BLOCKS];  // task blocks never ever move in memory, they are not volatile but the pointer is
+	volatile taskid_t numberOfBlocks; // this holds the current number of blocks available.
+
+	// here we have a linked list of tasks, this linked list is in time order, nearest task first.
+    tm_internal::TimerTaskAtomicPtr first;
 
 	// interrupt handling variables, store the interrupt state and probable pin cause if applicable
-	volatile pinid_t lastInterruptTrigger;
+	volatile pintype_t lastInterruptTrigger;
 	volatile bool interrupted;
     volatile InterruptFn interruptCallback;
+
+    tm_internal::TmAtomicBool memLockerFlag;      // memory and list operations are locked by this flag using the TmSpinLocker
 public:
 	/**
 	 * On all platforms there is a default instance of TaskManager called taskManager. You can create other instances
 	 * that can run on other threads, for example to process long running tasks that should be processed separately.
 	 */
 	TaskManager();
-	~TaskManager() { delete[] tasks; }
+	~TaskManager();
 
 	/**
 	 * Executes a task manager task as soon as possible. Useful to add work into task manager from another thread of
@@ -183,7 +249,7 @@ public:
 	 * @param pin the pin upon which to register (on the IoDevice above)
 	 * @param mode the mode in which to register, eg. CHANGE, RISING, FALLING
 	 */
-	void addInterrupt(InterruptAbstraction* interruptAbstraction, pinid_t pin, uint8_t mode);
+	void addInterrupt(InterruptAbstraction* interruptAbstraction, pintype_t pin, uint8_t mode);
 	
 	/**
 	 * Sets the interrupt callback to be used when an interrupt is signalled. Note that you will be
@@ -215,19 +281,18 @@ public:
 	/**
 	 * Used internally by the interrupt handlers to tell task manager an interrupt is waiting. Not for external use.
 	 */
-	static void markInterrupted(pinid_t interruptNo);
+	static void markInterrupted(pintype_t interruptNo);
 
 	/**
 	 * Reset the task manager such that all current tasks are cleared, back to power on state.
 	 */
     void reset() {
-        TaskLocker locker;
 		// all the slots should be cleared
-        for(int i =0; i<numberOfSlots; i++) {
-            tasks[i].clear();
+        for(int i =0; i<numberOfBlocks; i++) {
+            taskBlocks[i]->clearAll();
         }
 		// the queue must be completely cleared too.
-		first = nullptr;
+		tm_internal::atomicWritePtr(&first, nullptr);
     }
 
 	/**
@@ -245,25 +310,53 @@ public:
 	/**
 	 * Gets the first task in the run queue. Not often useful outside of testing.
 	 */
-	TimerTask* getFirstTask() const {
-		return first;
+	TimerTask* getFirstTask() {
+		return tm_internal::atomicReadPtr(&first);
 	}
+
+	/**
+	 * Gets the underlying TimerTask variable associated with this task ID.
+	 * @param task the task's ID
+	 * @return the task or nullptr.
+	 */
+    TimerTask* getTask(taskid_t task);
 
     /**
      * Gets the number of microseconds as an unsigned long to the next task execution.
      * To convert to milliseconds: divide by 1000, to seconds divide by 1,000,000.
      * @return the microseconds from now to next execution
      */
-    uint32_t microsToNextTask() const {
-        TaskLocker locker;
-        if(first == nullptr) return 600 * 1000000U; // wait for 10 minutes if there's nothing to do
-        else return first->microsFromNow();
+    uint32_t microsToNextTask() {
+        auto maybeTask = tm_internal::atomicReadPtr(&first);
+        if(maybeTask == nullptr) return 600 * 1000000U; // wait for 10 minutes if there's nothing to do
+        else return maybeTask->microsFromNow();
     }
 private:
+    /**
+     * Finds and allocates the next free task, once this returns a task will either have been allocated, making task
+     * manager storage bigger if needed, or it will return TASKMGR_INVALIDID otherwise.
+     * @return either a taskID or TASKMGR_INVALIDID if a slot could not be allocated
+     */
 	int findFreeTask();
+
+	/**
+	 * Removes an item from the task queue, so it is no longer in the run linked list. Note that there is a certain
+	 * amount of concurrency and it's possible that this may coincide with the task running.
+	 *
+	 * Thread safety: Must only be called on the queue
+	 * @param task the task to remove
+	 */
 	void removeFromQueue(TimerTask* task);
+
+	/**
+	 * Puts an item into the queue in time order, so the first to execute is at the top of the list.
+	 * @param tm the task to be added.
+	 */
 	void putItemIntoQueue(TimerTask* tm);
 
+	/**
+	 * When an interrupt occurs, this goes through all active tasks
+	 */
     void dealWithInterrupt();
 };
 

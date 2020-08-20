@@ -13,17 +13,21 @@ will cause an interrupt.
 Written by Dave Cherry of thecoderscorner.com in 2017
 */
 
-#include <TaskManager.h>
+#include <Arduino.h>
+#include <TaskManagerIO.h>
+#include "../../src/TaskManagerIO.h"
 
 // here we define an interrupt capable pin that will be varied in value during execution causing the
 // task manager interrupt handler to be executed. Task manager will marshal the interrupt back into 
 // a task, so it's safe to call anything you wish during it's execution.
 const int interruptPin = 2;
 
-// we use this to provide the debug information that shows the state of each task slot
-char slotString[20] = { 0 };
-
 int taskId = -1;
+
+// When we are not using IoAbstraction with task manager, then if we want to use interrupts, this class
+// provides the absolute bare minimum interrupt abstraction. Normally, we'd use IoAbstraction's device
+// abstraction capabilities instead.
+BasicArduinoInterruptAbstraction interruptAbstractionOnly;
 
 /**
  * We'll use this function to print out the milliseconds from start and also the
@@ -44,7 +48,7 @@ void log(const char* logLine) {
  * - Safe usage: change in rotary encoder, button pressed.
  * - Unsafe usage: over temprature shutdown, safety circuit.
  */
-void onInterrupt(pinid_t pin) {
+void onInterrupt(pintype_t pin) {
 	log("Interrupt triggered");
 	Serial.print("  Interrupt was ");
 	Serial.println(pin);
@@ -84,7 +88,8 @@ void twentySecondsUp() {
  */
 void tenSecondsUp() {
     log("Ten seconds up");
-    log(taskManager.checkAvailableSlots(slotString));
+    char slotString[32];
+    log(taskManager.checkAvailableSlots(slotString, sizeof slotString));
     if(taskManager.scheduleOnce(10000, twentySecondsUp) == 0xff) {
         log("Failed to register twenty second task");
     }
@@ -128,14 +133,17 @@ void setup() {
     });
 
     // and another to run repeatedly at 5 second intervals, shows the task slot status
-    taskManager.scheduleFixedRate(5, [] { log(taskManager.checkAvailableSlots(slotString)); }, TIME_SECONDS);
+    taskManager.scheduleFixedRate(5, [] {
+        char slotString[32];
+        log(taskManager.checkAvailableSlots(slotString, sizeof(slotString)));
+    }, TIME_SECONDS);
 
     // and now schedule onMicrosJob() to be called every 100 micros
     taskManager.scheduleFixedRate(100, onMicrosJob, TIME_MICROS);
 
     // register a port 2 interrupt.
-    taskManager.setInterruptCallback (onInterrupt);
-    taskManager.addInterrupt(ioUsingArduino(), interruptPin, CHANGE);
+    taskManager.setInterruptCallback(onInterrupt);
+    taskManager.addInterrupt(&interruptAbstractionOnly, interruptPin, CHANGE);
 }
 
 /**

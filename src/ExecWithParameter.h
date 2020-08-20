@@ -17,8 +17,8 @@
  */
 template <class TParam> class ExecWithParameter : public Executable {
 private:
-    const void (*fnParam)(TParam);
-    const TParam param;
+    void (*fnParam)(TParam);
+    TParam param;
 public:
     ExecWithParameter(void (*fn)(TParam), TParam storedParam) : fnParam(fn), param(storedParam){}
     ~ExecWithParameter() override = default;
@@ -27,5 +27,28 @@ public:
         fnParam(param);
     }
 };
+
+/**
+ * Similar to ExecWithParameter class, but this allows for two parameters.
+ * @see ExecWithParameter
+ *
+ * @tparam TParam1 The 1st type that you want to store until called back.
+ * @tparam TParam2 The 2nd type that you want to store until called back.
+ */
+template <class TParam1, class TParam2> class ExecWith2Parameters : public Executable {
+private:
+    void (*fnParam)(TParam1, TParam2);
+    TParam1 param1;
+    TParam2 param2;
+public:
+    ExecWith2Parameters(void (*fn)(TParam1, TParam2), TParam1 storedParam1, TParam2 storedParam2 ) :
+                        fnParam(fn), param1(storedParam1), param2(storedParam2) {}
+    ~ExecWith2Parameters() override = default;
+
+    void exec() override {
+        fnParam(param1, param2);
+    }
+};
+
 
 #endif //TASKMANAGERIO_EXECWITHPARAMETER_H
