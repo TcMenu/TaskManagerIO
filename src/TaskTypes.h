@@ -50,13 +50,12 @@ extern TaskManager taskManager;
  */
 class BaseEvent : public Executable {
 private:
-    volatile taskid_t taskId;
     TaskManager *taskMgrAssociation;
     volatile bool triggered;
     volatile bool finished;
 public:
     explicit BaseEvent(TaskManager *taskMgrToUse = &taskManager) :
-            taskId(0xffff), taskMgrAssociation(taskMgrToUse), triggered(false), finished(false) {}
+            taskMgrAssociation(taskMgrToUse), triggered(false), finished(false) {}
 
     /**
      * This method must be implemented by all event handlers. It will be called when the event is first registered with
@@ -100,13 +99,6 @@ public:
      * interrupt through task manager, then there is no need to call notify.
      */
     void markTriggeredAndNotify();
-
-    /**
-     * @return the task manager ID for this event, for making calls into task manager.
-     */
-    taskid_t getTaskId() const {
-        return taskId;
-    }
 };
 
 /**
