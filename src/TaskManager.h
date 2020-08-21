@@ -101,7 +101,7 @@ public:
      * @return true if contained, otherwise false
      */
     bool isTaskContained(taskid_t task) const {
-        return first >= task && task < (first + arraySize);
+        return task >= first && task < (first + arraySize);
     };
 
     TimerTask* getContainedTask(taskid_t task) {

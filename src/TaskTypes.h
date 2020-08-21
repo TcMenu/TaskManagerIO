@@ -114,24 +114,20 @@ public:
  */
 typedef void (*TimerFn)();
 
-#define TASK_RUNNING    0x80000000U
-#define TASK_REPEATING  0x40000000U
-#define TASK_MILLIS     0x20000000U
-#define TASK_SECONDS    0x10000000U
-#define TASK_MICROS     0x00000000U
-#define TIMING_MASKING  0x30000000U
-#define TIMER_MASK      0x0fffffffU
-
-#define isJobMicros(x)  (((x) & TIMING_MASKING)==TASK_MICROS)
-#define isJobMillis(x)  (((x) & TIMING_MASKING)==TASK_MILLIS)
-#define isJobSeconds(x) (((x) & TIMING_MASKING)==TASK_MICROS)
-#define timeFromExecInfo(x) (((x) & TIMER_MASK))
-
 /**
  * The time units that can be used with the schedule calls.
  */
 enum TimerUnit : uint8_t {
-    TIME_MICROS = 0, TIME_SECONDS = 1, TIME_MILLIS = 2
+    TIME_MICROS = 0,
+    TIME_SECONDS = 1,
+    TIME_MILLIS = 2,
+
+    TM_TIME_REPEATING = 0x10,
+    TM_TIME_RUNNING = 0x20,
+
+    TIME_REP_MICROS = TIME_MICROS | TM_TIME_REPEATING,
+    TIME_REP_SECONDS = TIME_SECONDS | TM_TIME_REPEATING,
+    TIME_REP_MILLIS = TIME_MILLIS | TM_TIME_REPEATING,
 };
 
 enum ExecutionType : uint8_t {
@@ -140,8 +136,15 @@ enum ExecutionType : uint8_t {
     EXECTYPE_EVENT = 2,
 
     EXECTYPE_MASK = 0x03,
-    EXECTYPE_DELETE_ON_DONE = 0x08
+    EXECTYPE_DELETE_ON_DONE = 0x08,
+
+    EXECTYPE_DEL_EXECUTABLE = EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE,
+    EXECTYPE_DEL_EVENT = EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE
 };
+
+#define isJobMicros(x)  (((x) & 0x0f)==TIME_MICROS)
+#define isJobMillis(x)  (((x) & 0x0f)==TIME_MILLIS)
+#define isJobSeconds(x) (((x) & 0x0f)==TIME_SECONDS)
 
 /**
  * Internal class that represents a single task slot. You should never have to deal with this class in user code.
@@ -151,15 +154,27 @@ enum ExecutionType : uint8_t {
  */
 class TimerTask {
 private:
-    volatile uint32_t executionInfo;
-    volatile uint32_t scheduledAt;
+    /** the thing that needs to be executed when the time is reached or event is triggered */
     volatile union {
         TimerFn callback;
         Executable *taskRef;
         BaseEvent *eventRef;
     };
+    /** TimerTask is essentially stored in a linked list by time in TaskManager, this represents the next item */
     tm_internal::TimerTaskAtomicPtr next;
+
+    /** the time at which the task was last scheduled, used to compare against the current time */
+    volatile uint32_t scheduledAt;
+    /** The timing information for this task, or it's interval */
+    volatile sched_t myTimingSchedule;
+
+    // 8 bit values start here.
+
+    /** The timing information for this task IE, millis, seconds or micros and if it's running or repeating. */
+    volatile TimerUnit timingInformation;
+    /** An atomic flag used to indicate if the task is in use, it should be set before doing anything to a task */
     tm_internal::TmAtomicBool taskInUse;
+    /** the mode in which the task executes, IE call a function, call an event or executable. Also if memory is owned */
     volatile ExecutionType executeMode;
 public:
     TimerTask();
@@ -168,9 +183,9 @@ public:
 
     unsigned long microsFromNow();
 
-    void initialise(uint32_t executionInfo, TimerFn execCallback);
+    void initialise(sched_t executionInfo, TimerUnit unit, TimerFn execCallback);
 
-    void initialise(uint32_t executionInfo, Executable *executable, bool deleteWhenDone);
+    void initialise(sched_t executionInfo, TimerUnit unit, Executable *executable, bool deleteWhenDone);
 
     void initialiseEvent(BaseEvent *event, bool deleteWhenDone);
 
@@ -183,7 +198,7 @@ public:
         }
         else {
             // otherwise it's based on the task repeating flag
-            return 0 != (executionInfo & TASK_REPEATING);
+            return 0 != (timingInformation & TM_TIME_REPEATING);
         }
     }
 
@@ -193,11 +208,11 @@ public:
         return tm_internal::atomicSwapBool(&taskInUse, false, true);
     }
 
-    void markRunning() { executionInfo |= TASK_RUNNING; }
+    void markRunning() { timingInformation = TimerUnit(timingInformation | TM_TIME_RUNNING); }
 
-    void clearRunning() { executionInfo &= ~TASK_RUNNING; }
+    void clearRunning() { timingInformation = TimerUnit(timingInformation & ~TM_TIME_RUNNING); }
 
-    bool isRunning() const { return (executionInfo & TASK_RUNNING) != 0; }
+    bool isRunning() const { return (timingInformation & TM_TIME_RUNNING) != 0; }
 
     bool isEvent() {
         auto execType = ExecutionType(executeMode & EXECTYPE_MASK);

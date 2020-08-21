@@ -183,6 +183,19 @@ typedef volatile bool TmAtomicBool;
 #endif // __MBED__
 
 //
+// Scheduling size. On all boards by default task manager uses 32 bit schedule data to make it more general purpose.
+// Note that even on 8 bit boards, all the math still needs to be 32 bit to deal with times, so there is very little
+// to no performance gain by doing thise.
+//
+// If you need the few extra bytes back, and can live with 16 bit schedule values then define TM_FORCE_16BIT_SCHEDULER
+//
+#if defined(TM_FORCE_16BIT_SCHEDULER)
+typedef uint16_t sched_t;
+#else
+typedef uint32_t sched_t;
+#endif
+
+//
 // DEFAULT_TASK_SIZE definition:
 // TaskManagerIO will re-allocate the task array if needed. So there's little need to adjust this for most use cases.
 // For AVR boards: MEGA 2560 has a default size of 10, others have a default size of 6.

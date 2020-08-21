@@ -27,33 +27,37 @@ public:
 
 TimerTask::TimerTask() {
     // set everything to not in use.
-    executionInfo = 0;
+    timingInformation = TIME_MILLIS;
+    myTimingSchedule = 0;
     callback = nullptr;
     executeMode = EXECTYPE_FUNCTION;
     tm_internal::atomicWritePtr(&next, nullptr);
     tm_internal::atomicWriteBool(&taskInUse, false);
 }
 
-void TimerTask::initialise(uint32_t execInfo, TimerFn execCallback) {
-    this->executionInfo = execInfo;
+void TimerTask::initialise(sched_t execInfo, TimerUnit unit, TimerFn execCallback) {
+    this->myTimingSchedule = execInfo;
+    this->timingInformation = unit;
     this->callback = execCallback;
     this->executeMode = EXECTYPE_FUNCTION;
 
-    this->scheduledAt = (isJobMicros(executionInfo)) ? micros() : millis();
+    this->scheduledAt = (isJobMicros(timingInformation)) ? micros() : millis();
     tm_internal::atomicWritePtr(&next, nullptr);
 }
 
-void TimerTask::initialise(uint32_t execInfo, Executable* execCallback, bool deleteWhenDone) {
-    this->executionInfo = execInfo;
+void TimerTask::initialise(uint32_t execInfo, TimerUnit unit, Executable* execCallback, bool deleteWhenDone) {
+    this->myTimingSchedule = execInfo;
+    this->timingInformation = unit;
     this->taskRef = execCallback;
     this->executeMode = deleteWhenDone ? ExecutionType(EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EXECUTABLE;
 
-    this->scheduledAt = (isJobMicros(executionInfo)) ? micros() : millis();
+    this->scheduledAt = (isJobMicros(timingInformation)) ? micros() : millis();
     tm_internal::atomicWritePtr(&next, nullptr);
 }
 
 void TimerTask::initialiseEvent(BaseEvent* event, bool deleteWhenDone) {
-    this->executionInfo = TASK_REPEATING;
+    this->timingInformation = (TimerUnit)(TIME_MICROS | TM_TIME_REPEATING);
+    this->myTimingSchedule = 0;
     this->eventRef = event;
     this->executeMode = deleteWhenDone ? ExecutionType(EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EVENT;
 
@@ -64,31 +68,31 @@ void TimerTask::initialiseEvent(BaseEvent* event, bool deleteWhenDone) {
 bool TimerTask::isReady() {
     if (!isInUse() || isRunning()) return false;
 
-    if ((isJobMicros(executionInfo)) != 0) {
-        uint32_t delay = timeFromExecInfo(executionInfo);
+    if ((isJobMicros(timingInformation)) != 0) {
+        uint32_t delay = myTimingSchedule;
         return (micros() - scheduledAt) >= delay;
     }
-    else if(isJobSeconds(executionInfo)) {
-        uint32_t delay = timeFromExecInfo(executionInfo) * 1000L;
+    else if(isJobSeconds(timingInformation)) {
+        uint32_t delay = uint32_t(myTimingSchedule) * 1000UL;
         return (millis() - scheduledAt) >= delay;
     }
     else {
-        uint32_t delay = timeFromExecInfo(executionInfo);
+        uint32_t delay = myTimingSchedule;
         return (millis() - scheduledAt) >= delay;
     }
 }
 
 unsigned long TimerTask::microsFromNow() {
     uint32_t microsFromNow;
-    if (isJobMicros(executionInfo)) {
-        uint32_t delay = timeFromExecInfo(executionInfo);
+    if (isJobMicros(timingInformation)) {
+        uint32_t delay = myTimingSchedule;
         int32_t alreadyTaken = (micros() - scheduledAt);
         microsFromNow =  (delay < alreadyTaken) ? 0 : (delay - alreadyTaken);
     }
     else {
-        uint32_t delay = timeFromExecInfo(executionInfo);
-        if (isJobSeconds(executionInfo)) {
-            delay *= ((uint32_t)1000);
+        uint32_t delay = myTimingSchedule;
+        if (isJobSeconds(timingInformation)) {
+            delay *= 1000UL;
         }
         uint32_t alreadyTaken = (millis() - scheduledAt);
         microsFromNow = (delay < alreadyTaken) ? 0 : ((delay - alreadyTaken) * 1000UL);
@@ -116,20 +120,24 @@ void TimerTask::execute() {
     }
 
     if (isRepeating()) {
-        this->scheduledAt = isJobMicros(executionInfo) ? micros() : millis();
-    }
-    else {
-        clear();
+        this->scheduledAt = isJobMicros(timingInformation) ? micros() : millis();
     }
 }
 
 void TimerTask::clear() {
+    // if needed delete the event/executable object and then clear it.
     if((executeMode & EXECTYPE_DELETE_ON_DONE) != 0 && taskRef != nullptr) {
         delete taskRef;
     }
     callback = nullptr;
-    executionInfo = 0;
+
+    // clear timing info
+    scheduledAt = 0;
+    timingInformation = TIME_MILLIS;
+
+    // lastly remove the next pointer and then mark as available.
     tm_internal::atomicWritePtr(&next, nullptr);
+    tm_internal::atomicWriteBool(&taskInUse, false);
 }
 
 void TimerTask::processEvent() {
@@ -142,8 +150,7 @@ void TimerTask::processEvent() {
         clear();
     }
     else {
-        executionInfo = executionInfo & (~TIMER_MASK);
-        executionInfo |= (eventRef->timeOfNextCheck() & TIMER_MASK);
+        myTimingSchedule = eventRef->timeOfNextCheck();
         scheduledAt = micros();
     }
 }

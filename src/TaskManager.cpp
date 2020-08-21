@@ -96,19 +96,11 @@ int TaskManager::findFreeTask() {
 	return TASKMGR_INVALIDID;
 }
 
-inline uint32_t toTimerValue(uint32_t v, TimerUnit unit) {
-	if (unit == TIME_MILLIS && v > TIMER_MASK) {
-		unit = TIME_SECONDS;
-		v = v / 1000U;
-	}
-	return (v & TIMER_MASK) | (((uint32_t)unit) << 28U);
-}
-
 taskid_t TaskManager::scheduleOnce(uint32_t when, TimerFn timerFunction, TimerUnit timeUnit) {
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
-        task->initialise(toTimerValue(when, timeUnit), timerFunction);
+        task->initialise(when, timeUnit, timerFunction);
 		putItemIntoQueue(task);
 	}
 	return taskId;
@@ -118,7 +110,7 @@ taskid_t TaskManager::scheduleFixedRate(uint32_t when, TimerFn timerFunction, Ti
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
-        task->initialise(toTimerValue(when, timeUnit) | TASK_REPEATING, timerFunction);
+        task->initialise(when, TimerUnit(timeUnit | TM_TIME_REPEATING), timerFunction);
 		putItemIntoQueue(task);
 	}
 	return taskId;
@@ -128,7 +120,7 @@ taskid_t TaskManager::scheduleOnce(uint32_t when, Executable* execRef, TimerUnit
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
 	    auto task = getTask(taskId);
-		task->initialise(toTimerValue(when, timeUnit) , execRef, deleteWhenDone);
+		task->initialise(when, timeUnit, execRef, deleteWhenDone);
 		putItemIntoQueue(task);
 	}
 	return taskId;
@@ -138,7 +130,7 @@ taskid_t TaskManager::scheduleFixedRate(uint32_t when, Executable* execRef, Time
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
-        task->initialise(toTimerValue(when, timeUnit) | TASK_REPEATING, execRef, deleteWhenDone);
+        task->initialise(when, TimerUnit(timeUnit | TM_TIME_REPEATING), execRef, deleteWhenDone);
 		putItemIntoQueue(task);
 	}
 	return taskId;
@@ -194,29 +186,33 @@ void TaskManager::runLoop() {
 	// go through the timer (scheduled) tasks in priority order. they are stored
 	// in a linked list ordered by first to be scheduled. So we only go through
 	// these until the first one that isn't ready.
-	auto tm = tm_internal::atomicReadPtr(&first);
-	while(tm != nullptr) {
+	TimerTask* tm;
+	while((tm = tm_internal::atomicReadPtr(&first)) != nullptr) {
 #if defined(ESP8266) || defined(ESP32)
 	    // here we are making extra sure we are good citizens on ESP boards
 	    yield();
 #endif
 
-        if (!tm->isReady()) {
-            break;
-        }
-        auto next = tm->getNext();
+        if (!tm->isReady()) break;
 
         // by here we know that the task is in use. If it's in use nothing will touch it until it's marked as
         // available. We can do this part without a lock, knowing that we are the only thing that will touch
         // the task. We further know that all non-immutable fields on TimerTask are volatile.
         tm->execute();
-        tm = next;
+        removeFromQueue(tm);
+        if(tm->isRepeating()) {
+            putItemIntoQueue(tm);
+        }
+        else {
+            tm->clear();
+        }
 	}
 }
 
 void TaskManager::putItemIntoQueue(TimerTask* tm) {
     // we must own the lock before adding to the queue, as someone else could be removing.
     TmSpinLock spinLock(&memLockerFlag);
+
     auto theFirst = tm_internal::atomicReadPtr(&first);
 
 	// shortcut, no first yet, so we are at the top!
@@ -228,9 +224,8 @@ void TaskManager::putItemIntoQueue(TimerTask* tm) {
 
 	// if we are the new first..
 	if (theFirst->microsFromNow() > tm->microsFromNow()) {
-		tm->setNext(nullptr);
-		tm_internal::atomicWritePtr(&first, tm);
         tm->setNext(theFirst);
+		tm_internal::atomicWritePtr(&first, tm);
         return;
 	}
 
@@ -240,8 +235,8 @@ void TaskManager::putItemIntoQueue(TimerTask* tm) {
 
 	while (current != nullptr) {
 		if (current->microsFromNow() > tm->microsFromNow()) {
-			previous->setNext(tm);
-			tm->setNext(current);
+            tm->setNext(current);
+            previous->setNext(tm);
 			return;
 		}
 		previous = current;
@@ -266,9 +261,9 @@ void TaskManager::removeFromQueue(TimerTask* tm) {
 
     // shortcut, if we are first, just remove us by getting the next and setting first.
 	if (theFirst == tm) {
-        tm->setNext(nullptr);
         tm_internal::atomicWritePtr(&first, tm->getNext());
-		return;
+        tm->setNext(nullptr);
+        return;
 	}
 
 	// otherwise, we have a single linked list, so we need to keep previous and current and

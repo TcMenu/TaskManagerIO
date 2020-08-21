@@ -18,8 +18,12 @@ taskid_t oneSecondTask;
 // this class holds a number of ticks and bumps that count on every execute.
 class MicrosecondTask : public Executable {
 private:
-    int ticks{};
+    int ticks;
 public:
+    MicrosecondTask(int startingTicks = 0) {
+        ticks = startingTicks;
+    }
+
     // This is called by task manager when the task is ready to run.
     void exec() {//override {
         ticks++;
@@ -33,64 +37,70 @@ public:
 // here we store a reference to the microsecond task.
 MicrosecondTask* microsTask;
 
-void log(const char* toLog) {
-    console.write(toLog, strlen(toLog));
-    char sz[2];
-    sz[0]='\n';
-    sz[1]=0;
-    console.write(sz, strlen(sz));
-}
-
-void log(const char* toLog, int i) {
-    console.write(toLog, strlen(toLog));
+void log(const char* toLog, int i = 0) {
     char sz[20];
-    itoa(i, sz, 10);
+    itoa(millis(), sz, 10);
     console.write(sz, strlen(sz));
-    sz[0]='\n';
-    sz[1]=0;
-    console.write(sz, strlen(sz));
+    console.write(" ", 1);
+    console.write(toLog, strlen(toLog));
+
+    if(i!=0) {
+        itoa(i, sz, 10);
+        console.write(sz, strlen(sz));
+    }
+
+    console.write("\n", 1);
 }
 
 // A job submitted to taskManager can either be a function that returns void and takes no parameters, or a class
 // that extends Executable. In this case the job creates a repeating task and logs to the console.
 void tenSecondJob() {
     log("30 seconds up, restart a new repeating job");
-//    taskManager.scheduleFixedRate(500, [] {
-//        log("Half second job");
-//        console.write("Micros = ", microsTask.getCurrentTicks());
-//    });
+    taskManager.scheduleFixedRate(500, [] {
+        log("Half second job, micros = ", microsTask->getCurrentTicks());
+    });
 }
 
 // Again another task manager function, we pass this as the timerFn argument later on
 void twentySecondJob() {
     log("20 seconds up, delete 1 second job, schedule 10 second job");
-//    taskManager.scheduleOnce(10, tenSecondJob, TIME_SECONDS);
-//    taskManager.cancelTask(oneSecondTask);
+    taskManager.scheduleOnce(10, tenSecondJob, TIME_SECONDS);
+    taskManager.cancelTask(oneSecondTask);
 }
 
 //
 // Set up all the initial tasks and events
 //
 void setupTasks() {
+    microsTask = new MicrosecondTask(0);
+
     // Here we create a new task using milliseconds; which is the default time unit for scheduling. We use a lambda
     // function as the means of scheduling.
     oneSecondTask = taskManager.scheduleFixedRate(1000, [] {
-        log("One second job, micro count", microsTask->getCurrentTicks());
+        log("One second job, micro count = ", microsTask->getCurrentTicks());
     });
-//
-//    // Here we create a new task based on the twentySecondJob function, that will be called at the appropriate time
-//    // We schedule this with a unit of seconds.
-//    taskManager.scheduleOnce(20, twentySecondJob, TIME_SECONDS);
-//
-//    // here we create a new task based on Executable and pass it to taskManager for scheduling. We provide the
-//    // time unit as microseconds, and with the last parameter we tell task manager to delete it when the task
-//    // is done, IE for one shot tasks that is as soon as it's done, for repeating tasks when it's cancelled.
-//    microsTask = new MicrosecondTask();
-//    taskManager.scheduleFixedRate(100, microsTask, TIME_MICROS, true);
+
+    // Here we create a new task based on the twentySecondJob function, that will be called at the appropriate time
+    // We schedule this with a unit of seconds.
+    taskManager.scheduleOnce(20, twentySecondJob, TIME_SECONDS);
+
+    // here we create a new task based on Executable and pass it to taskManager for scheduling. We provide the
+    // time unit as microseconds, and with the last parameter we tell task manager to delete it when the task
+    // is done, IE for one shot tasks that is as soon as it's done, for repeating tasks when it's cancelled.
+    microsTask = new MicrosecondTask();
+    taskManager.scheduleFixedRate(100, microsTask, TIME_MICROS, true);
 }
 
 int main() {
     log("starting up taskmanager example");
+
+    // this is how we get diagnostic information from task manager
+    // it will notify of significant events to the loggingDelegate.
+    tm_internal::loggingDelegate = [](tm_internal::TmErrorCode code, int task) {
+        log("Taskmgr notification code: ", code);
+        log("   -> Task num: ", task);
+    };
+
     setupTasks();
 
     while(1) {
