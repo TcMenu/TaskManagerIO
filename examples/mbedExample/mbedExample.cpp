@@ -6,6 +6,7 @@
  */
 
 #include <mbed.h>
+#include <rtos.h>
 #include <TaskManagerIO.h>
 
 // Here we create a serial object to write log statements to.
@@ -13,6 +14,8 @@ BufferedSerial console(USBTX, USBRX, 115200);
 
 // and we also store the taskId of the one second task, to remove it later.
 taskid_t oneSecondTask;
+
+Thread threadEventMgr;
 
 // we don't want to log on every run of the microsecond task, it would overwhelm serial so just count instead.
 // this class holds a number of ticks and bumps that count on every execute.
@@ -91,6 +94,15 @@ void setupTasks() {
     taskManager.scheduleFixedRate(100, microsTask, TIME_MICROS, true);
 }
 
+void taskPump() {
+    while(1) {
+        ThisThread::sleep_for(250);
+        taskManager.execute([]() {
+            log("execute immediately from thread proc");
+        });
+    }
+}
+
 int main() {
     log("starting up taskmanager example");
 
@@ -102,6 +114,8 @@ int main() {
     };
 
     setupTasks();
+
+    threadEventMgr.start(taskPump);
 
     while(1) {
         taskManager.runLoop();
