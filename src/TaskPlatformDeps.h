@@ -148,15 +148,15 @@ namespace tm_internal {
     }
 }
 
-#else // fall back to using Arduino regular logic.
-
-// here we are in full arduino mode (AVR, MKR, ESP etc).
+#else
+// fall back to using Arduino regular logic, works for all single core boards. If we end up here for a multicore
+// board then there may be problems. Here we are in full arduino mode (AVR, MKR etc).
 # define IOA_USE_ARDUINO
 #include <Arduino.h>
 typedef uint8_t pintype_t;
 
-namespace(tm_internal) {
-typedef TimerTask volatile* TimerTaskAtomicPtr;
+namespace tm_internal {
+typedef TimerTask *volatile TimerTaskAtomicPtr;
 typedef volatile bool TmAtomicBool;
 
     static bool atomicSwapBool(volatile bool* ptr, bool expected, bool newValue) {
@@ -174,6 +174,11 @@ typedef volatile bool TmAtomicBool;
         return *ptr;
     }
 
+    inline void atomicWriteBool(volatile bool *ptr, bool newVal) {
+        *ptr = newVal;
+    }
+
+#if defined(__AVR__)
     inline void atomicWritePtr(TimerTaskAtomicPtr* pPtr, TimerTask* newValue) {
         noInterrupts();
         *pPtr = newValue;
@@ -186,14 +191,23 @@ typedef volatile bool TmAtomicBool;
         interrupts();
         return ptr;
     }
-}
+#else
+// all other supported Arduino boards are atomic for pointer types
+inline void atomicWritePtr(TimerTaskAtomicPtr* pPtr, TimerTask* newValue) {
+        *pPtr = newValue;
+    }
 
-#endif // __MBED__
+    inline TimerTask* atomicReadPtr(TimerTaskAtomicPtr* pPtr) {
+        return *pPtr;
+    }
+#endif // AVR check for PTR atomicity
+}
+#endif // All platform checks
 
 //
 // Scheduling size. On all boards by default task manager uses 32 bit schedule data to make it more general purpose.
 // Note that even on 8 bit boards, all the math still needs to be 32 bit to deal with times, so there is very little
-// to no performance gain by doing thise.
+// to no performance gain by doing this.
 //
 // If you need the few extra bytes back, and can live with 16 bit schedule values then define TM_FORCE_16BIT_SCHEDULER
 //
@@ -201,7 +215,7 @@ typedef volatile bool TmAtomicBool;
 typedef uint16_t sched_t;
 #else
 typedef uint32_t sched_t;
-#endif
+#endif // TM_FORCE_16BIT_SCHEDULER
 
 //
 // DEFAULT_TASK_SIZE definition:

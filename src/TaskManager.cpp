@@ -363,8 +363,9 @@ char* TaskManager::checkAvailableSlots(char* data, int dataSize) const {
 	    auto last = taskBlocks[i]->lastSlot();
 	    for(int j=taskBlocks[i]->firstSlot(); j < last; j++) {
 	        auto task = taskBlocks[i]->getContainedTask(j);
-            data[position++] = task->isRepeating() ? 'R' : (task->isInUse() ? 'U' : 'F');
-            if (task->isRunning()) data[i] = tolower(data[i]);
+            data[position] = task->isRepeating() ? 'R' : (task->isInUse() ? 'U' : 'F');
+            if (task->isRunning()) data[position] = tolower(data[position]);
+            position++;
 	    }
 	    if(position >= maxLen) break;
 	}

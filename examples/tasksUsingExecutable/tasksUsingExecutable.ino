@@ -43,7 +43,7 @@ public:
      */
     void setData(const char* newData) {
         strncpy(data, newData, sizeof(data));
-        data[sizeof(data)] = 0; // make sure zero terminated.
+        data[sizeof(data) - 1] = 0; // make sure zero terminated.
     }
 
     /**
