@@ -33,7 +33,8 @@ void log(const char* toLog, int i = 0) {
     console.write("\n", 1);
 }
 
-// we don't want to log on every run of the microsecond task, it would overwhelm serial so just count instead.
+// An executable task is a task that where the exec method  is called when the task is due for execution.
+// We don't want to log on every run of the microsecond task, it would overwhelm serial so just count instead.
 // this class holds a number of ticks and bumps that count on every execute.
 class MicrosecondTask : public Executable {
 private:
@@ -43,16 +44,29 @@ public:
         ticks = startingTicks;
     }
 
-    // This is called by task manager when the task is ready to run.
-    void exec() {//override {
+    /**
+     * This is called by task manager when the task is ready to run.
+     */
+    void exec() override {
         ticks++;
     }
 
+    /**
+     * @return the number of ticks currently counted
+     */
     int getCurrentTicks() const {
         return ticks;
     }
 };
 
+// here we store a reference to the microsecond task.
+MicrosecondTask* microsTask;
+
+// An event that extends BaseEvent allows for event driven programming, either notified by polling, interrupt or
+// another thread. There are two important methods that you need to implement, timeOfNextCheck that allows for polling
+// events, where you do the check in that method and trigger the event calling setTriggered(). Alternatively, like
+// this event, another thread or interrupt can trigger the event, in which case you call markTriggeredAndNotify() which
+// wakes up task manager. When the event is triggered, is exec() method will be called.
 class DiceEvent : public BaseEvent {
 private:
     volatile int diceValue;
@@ -62,14 +76,29 @@ public:
     DiceEvent(int desired) : desiredValue(desired) {
         diceValue = 0;
     }
+
+    /**
+     * Here we tell task manager when we wish to be checked upon again, to see if we should execute. In polling events
+     * we'd do our check here, and setTriggered(true) if our condition was met, here instead we just tell task manager
+     * not to call us for 60 seconds at a go
+     * @return the time to the next check
+     */
     uint32_t timeOfNextCheck() override {
         return NEXT_CHECK_INTERVAL;
     }
 
+    /**
+     * This is called when the event is triggered. We just log something here
+     */
     void exec() override {
         log("Dice face matched with ", diceValue);
     }
 
+    /**
+     * Called by the other thread when the dice is updated, it checks if the event is now triggered as a result
+     * and then triggers the event. When triggering from another thread or interrupt, use markTriggeredAndNotify()
+     * @param faceValue the new dice value
+     */
     void diceUpdated(int faceValue) {
         diceValue = faceValue;
         if(faceValue == desiredValue) {
@@ -77,11 +106,11 @@ public:
         }
     }
 
+    /**
+     * We should always provide a destructor.
+     */
     ~DiceEvent() override = default;
 } diceEvent(3);
-
-// here we store a reference to the microsecond task.
-MicrosecondTask* microsTask;
 
 // A job submitted to taskManager can either be a function that returns void and takes no parameters, or a class
 // that extends Executable. In this case the job creates a repeating task and logs to the console.
@@ -103,8 +132,6 @@ void twentySecondJob() {
 // Set up all the initial tasks and events
 //
 void setupTasks() {
-    microsTask = new MicrosecondTask(0);
-
     // Here we create a new task using milliseconds; which is the default time unit for scheduling. We use a lambda
     // function as the means of scheduling.
     oneSecondTask = taskManager.scheduleFixedRate(1000, [] {
@@ -118,7 +145,7 @@ void setupTasks() {
     // here we create a new task based on Executable and pass it to taskManager for scheduling. We provide the
     // time unit as microseconds, and with the last parameter we tell task manager to delete it when the task
     // is done, IE for one shot tasks that is as soon as it's done, for repeating tasks when it's cancelled.
-    microsTask = new MicrosecondTask();
+    microsTask = new MicrosecondTask(0);
     taskManager.scheduleFixedRate(100, microsTask, TIME_MICROS, true);
 
     // here we create an event that will be triggered on another thread and then notify task manager when it is
@@ -128,6 +155,10 @@ void setupTasks() {
 
 bool exitThreads = false;
 
+//
+// Here we create another thread that will constantly put events onto the queue for immediate execution, in addition
+// it also updates our dice event frequently too.
+//
 void taskPump() {
     while(!exitThreads) {
         ThisThread::sleep_for(500);
@@ -139,6 +170,9 @@ void taskPump() {
     }
 }
 
+//
+// Yet another thread that constantly raises events to test thread safety of task manager.
+//
 void anotherProc() {
     while(!exitThreads) {
         ThisThread::sleep_for(600);

@@ -77,7 +77,6 @@ namespace tm_internal {
 typedef uint8_t pintype_t;
 # define IOA_USE_ARDUINO
 
-
 namespace tm_internal {
     typedef _Atomic(TimerTask*) TimerTaskAtomicPtr;
     typedef atomic_bool TmAtomicBool;
@@ -226,5 +225,14 @@ namespace tm_internal {
         if(loggingDelegate) loggingDelegate(code, task);
     }
 }
+
+#undef ISR_ATTR
+#if defined(ESP8266)
+# define ISR_ATTR ICACHE_RAM_ATTR
+#elif defined(ESP32)
+# define ISR_ATTR IRAM_ATTR
+#else
+# define ISR_ATTR
+#endif
 
 #endif //TASKMANGERIO_PLATFORMDETERMINATION_H

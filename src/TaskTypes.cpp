@@ -86,7 +86,7 @@ unsigned long TimerTask::microsFromNow() {
     uint32_t microsFromNow;
     if (isJobMicros(timingInformation)) {
         uint32_t delay = myTimingSchedule;
-        int32_t alreadyTaken = (micros() - scheduledAt);
+        uint32_t alreadyTaken = (micros() - scheduledAt);
         microsFromNow =  (delay < alreadyTaken) ? 0 : (delay - alreadyTaken);
     }
     else {

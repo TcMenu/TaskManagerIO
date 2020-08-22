@@ -1,67 +1,115 @@
 /**
- * An example simple event that is triggered when analog in reaches a certain threshold. For the sake of this
- * example we've used a polled event, that tracks analog every 1ms (1000us). When the condition is met the event
- * will trigger, and it's exec() method will be called. This is a polled event, see the mbed example for an interrupt
- * based event.
+ * An example simple event that simulates a dice and an interrupt on a pin. When the dice simulated by random reads
+ * 3 then we raise an event. This is a polled event meaning that we rely on task manager polling to "roll the dice".
+ * Further, there is a basic interrupt on a selected pin that is not marshalled by task manager, instead it raises
+ * an event.
  */
 
 #include <TaskManagerIO.h>
 
+#define INT_PIN 14
+
 /**
- * Here we create our event class, all events must extend from BaseEvent, and that class provides much of the boiler
- * plate needed for event handling. Here we implement a very simple latching analog level threshold event.
+ * An event that extends BaseEvent allows for event driven programming, either notified by polling, interrupt or
+ * another thread. There are two important methods that you need to implement, timeOfNextCheck that allows for polling
+ * events, where you do the check in that method and trigger the event calling setTriggered(). Alternatively, like
+ * this event, another thread or interrupt can trigger the event, in which case you call markTriggeredAndNotify() which
+ * wakes up task manager. When the event is triggered, is exec() method will be called.
  */
-class AnalogInExceedsEvent : public BaseEvent {
+class DiceEvent : public BaseEvent {
 private:
-    int analogThreshold;
-    pinid_t analogPin;
-    int lastReading;
-    bool latched;
+    volatile int diceValue;
+    const int desiredValue;
+    static const int NEXT_CHECK_INTERVAL = 60 * 1000000; // 60 seconds away, maximum is about 1 hour.
 public:
-    /**
-     * Constructs the event class providing the analog pin to read from and the threshold for triggering.
-     * @param inputPin the pin to read from
-     * @param threshold the value at which to trigger the event.
-     */
-    AnalogInExceedsEvent(pinid_t inputPin, int threshold) : BaseEvent() {
-        analogThreshold = threshold;
-        analogPin = inputPin;
-        lastReading = 0;
-        latched = false;
+    DiceEvent(int desired) : desiredValue(desired) {
+        diceValue = 0;
     }
 
     /**
-     * Here we are asked by task manager if the event is ready to be triggered (return 0), or if not, how long we should
-     * wait before polling again. The maximum poll time is 33,554,431 micro seconds (about 30 seconds).
-     * @return either 0 to indicate triggering, or the time to delay before polling again.
+     * Here we tell task manager when we wish to be checked upon again, to see if we should execute. In polling events
+     * we'd do our check here, and mark it as triggered if our condition was met, here instead we just tell task manager
+     * not to call us for 60 seconds at a go
+     * @return the time to the next check
      */
     uint32_t timeOfNextCheck() override {
-        lastReading = analogRead(analogPin);
-        auto analogTrigger = lastReading > analogThreshold;
-        if(analogTrigger && latched) {
-            setTriggered(true);
-            latched = true;
+        // simulate rolling the dice
+        diceValue = (rand() % 7);
+
+        if(diceValue == desiredValue) {
+            markTriggeredAndNotify();
         }
-        return isTriggered() ? 0 : 1000;
+
+        return 250 * 1000; // every 100 milliseconds we roll the dice
     }
 
     /**
-     * This is called when the event is triggered.
+     * This is called when the event is triggered. We just log something here
      */
     void exec() override {
-        latched = false;
-        Serial.print("Analog event triggered, reading=");
-        Serial.println(lastReading);
+        Serial.print("Dice face matched with ");
+        Serial.println(diceValue);
     }
-};
 
-// Create an instance of the event.
-AnalogInExceedsEvent analogEvent(A0, 500);
+    /**
+     * We should always provide a destructor.
+     */
+    ~DiceEvent() override = default;
+} diceEvent(3);
+
+void interruptHandler();
+
+/**
+ * Here we show how to use a raw interrupt that is not marshalled by task manager to raise an event. The constructor
+ * registers the interrupt, which when hit just triggers the event. The event is then executed in task manager with
+ * high priority, IE as the next task.
+ */
+class InterruptEvent : public BaseEvent {
+public:
+    /**
+     * The constructor just registers a raw interrupt handler, that we must not do any significant
+     * work on, in this case our ISR just tells the event it's triggered.
+     * @param pin the interrupt pin
+     */
+    InterruptEvent(pintype_t pin) {
+        pinMode(INT_PIN, INPUT_PULLUP);
+        ::attachInterrupt(digitalPinToInterrupt(pin), interruptHandler, RISING);
+    }
+
+    ~InterruptEvent() override = default;
+
+    /**
+     * We don't need to poll in this case, just set the poll interval very high
+     * @return a large poll interval for interrupt only events
+     */
+    uint32_t timeOfNextCheck() override {
+        return 300 * 1000000; // trigger every 5 minutes. we are not polling here, max gap is 1 hour.
+    }
+
+    /**
+     * This is called back by task manager as soon after the event is triggered as possible
+     */
+    void exec() override {
+        Serial.println("interrupt event was triggered");
+    }
+} interruptEvent(INT_PIN);
+
+/**
+ * THis is a raw ISR, do very little here. In this case we just mark the event as triggered
+ */
+ISR_ATTR void interruptHandler() {
+    interruptEvent.markTriggeredAndNotify();
+}
 
 void setup() {
-    pinMode(A0, INPUT);
-    taskManager.registerEvent(&analogEvent);
+    Serial.begin(115200);
+    Serial.println("Starting the event example");
+
+    // now we register both of the events with task manager.
+    taskManager.registerEvent(&diceEvent);
+    taskManager.registerEvent(&interruptEvent);
 }
+
 
 //
 // This is the regular loop method for a taskManager sketch, just repeatedly calls runLoop. If you want to use
@@ -70,9 +118,10 @@ void setup() {
 // pins that you have interrupts, otherwise, taskManager will not work.
 //
 void loop() {
-    taskManager.runLoop();
-
-    // Here's an example of what you can do in low power situations to reduce power usage.
+    // Here's an example of what you can do in low power situations to reduce power usage. You may want to cap the delay
+    // at a certain maximum, or sometimes turn off task manager altogether.
     //auto microsToTask = taskManager.microsToNextTask();
     //myLowPowerDelayFunction(microsToTask);
+
+    taskManager.runLoop();
 }

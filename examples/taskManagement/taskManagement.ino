@@ -88,8 +88,6 @@ void twentySecondsUp() {
  */
 void tenSecondsUp() {
     log("Ten seconds up");
-    char slotString[32];
-    log(taskManager.checkAvailableSlots(slotString, sizeof slotString));
     if(taskManager.scheduleOnce(10000, twentySecondsUp) == 0xff) {
         log("Failed to register twenty second task");
     }

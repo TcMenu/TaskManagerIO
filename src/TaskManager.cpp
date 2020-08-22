@@ -7,16 +7,6 @@
 #include "TaskManager.h"
 #include "ExecWithParameter.h"
 
-#undef ISR_ATTR
-#if defined(ESP8266)
-# define ISR_ATTR ICACHE_RAM_ATTR
-#elif defined(ESP32)
-# define ISR_ATTR IRAM_ATTR
-#else
-# define ISR_ATTR
-#endif
-
-
 TaskManager taskManager;
 
 class TmSpinLock {
@@ -222,8 +212,8 @@ void TaskManager::putItemIntoQueue(TimerTask* tm) {
 		return;
 	}
 
-	// if we are the new first..
-	if (theFirst->microsFromNow() > tm->microsFromNow()) {
+	// if we need to execute now or before the next task, then we are first. For performance we use unfair semantics
+	if (theFirst->microsFromNow() >= tm->microsFromNow()) {
         tm->setNext(theFirst);
 		tm_internal::atomicWritePtr(&first, tm);
         return;

@@ -6,7 +6,7 @@
  * However, it has negligible impact on most 32 boards.
  */
 
-#include <IoAbstraction.h>
+#include <TaskManagerIO.h>
 #include <ExecWithParameter.h>
 
 /**
@@ -47,6 +47,14 @@ public:
     }
 
     /**
+     * Gets the data element of the shared state.
+     * @return the data element
+     */
+    const char* getData() {
+        return data;
+    }
+
+    /**
      * This is called back by task manager when the task is scheduled.
      */
 	void exec() override {
@@ -68,14 +76,23 @@ struct MoreState {
     int amount;
 } moreState;
 
+// This is called by a task that registers it using ExecWithParameter, it allows you to
+// use function based tasks that take a parameter
 void parameterFunction(MoreState* myState) {
     Serial.print("More State, amount = ");
     Serial.println(myState->amount);
 }
 
+// This is called by a task that registers it using ExecWith2Parameters, it allows you to
+// use function based tasks that take two parameters
+void twoParameterFunction(MoreState* moreState, SharedState* sharedState) {
+    Serial.print("More State, amount = ");
+    Serial.print(moreState->amount);
+    Serial.print(", shared state = ");
+    Serial.println(sharedState->getData());
+}
+
 void setup() {
-    // wait for serial and then set it up (the first statement needed on MKR boards)
-    while(!Serial);
     Serial.begin(115200);
 
     Serial.println("Task example starting..");
@@ -100,7 +117,16 @@ void setup() {
 
     // Create a task function that will be called with the moreState parameter. Because it's allocated with new we must
     // tell task manager to delete it when it's done with it, that's the last true parameter.
+    // Note that if you allocate the thing to be scheduled using new, you must pass true as the deleteWhenDone (last)
+    // parameter. This instructs task manager that it has been passed ownership of the object.
     taskManager.scheduleFixedRate(1000, new ExecWithParameter<MoreState*>(parameterFunction, &moreState), TIME_MILLIS, true);
+
+    // Here we creaate another task to run every 3 seconds that takes two parameters. It will call a function with two
+    // parameters that match the parameters in the template.
+    // Note that if you allocate the thing to be scheduled using new, you must pass true as the deleteWhenDone (last)
+    // parameter. This instructs task manager that it has been passed ownership of the object.
+    auto paramFunction = new ExecWith2Parameters<MoreState*, SharedState*>(twoParameterFunction, &moreState, &state);
+    taskManager.scheduleFixedRate(3, paramFunction, TIME_SECONDS, true);
 }
 
 void loop() {
