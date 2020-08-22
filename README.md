@@ -20,7 +20,7 @@ Current status is all functions are working on mbed and ESP8266. See issues for 
 | --------- | ----------------- | ------- |
 | ARM mbed  | STM32, nRF.       | Working |
 | ESP8266   | Node MCU, Huzzah  | Working |
-| ESP32     | Wifi32, Huzzah32  | Not yet |
+| ESP32     | Wifi32, Huzzah32  | Working |
 | SAMD ARM  | MKR, IoT, Zero.   | Not yet |
 | AVR       | Uno, Mega Mighty  | Not yet |
 
