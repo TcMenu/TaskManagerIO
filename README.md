@@ -4,9 +4,11 @@
 
 **This library is under heavy development and is not yet ready for anyone to use in their projects. Continue to use the task manager in IoAbstraction for the moment**. 
 
-Current status is all functions are working on mbed and ESP8266. See issues for what's left.
+## Summary and what's supports:
 
-### What this library supports:
+TaskManagerIO is an evolution of the task management class that was originally situated in IoAbstraction, and now moved here. TaskManager is very popular in that framework because it makes programming complex tasks easier, and works across a wide range of devices. Now, we are in a new era of embedded development, where multiple threads (and even cores) have become a relatity. 
+
+TaskManagerIO has been built from the ground up to handle this new reality while still working on many boards. Any sketch that worked on IoAbstraction task manager will work with this library unaffected. Further, it uses a lock free design, based on compare and exchange to acheive thread safety on larger boards,   atomic operations on AVR, and interrupt locking on other boards.
 
 * Simple coroutines style task management, execute now, at a point in time, or on a schedule.
 * Ability to add events from different threads for either delayed or immediate execution. 
