@@ -4,7 +4,7 @@
 
 **This library is under heavy development and is not yet ready for anyone to use in their projects. Continue to use the task manager in IoAbstraction for the moment**. 
 
-Current status is compilation on mbed and simple tasks are working. 
+Current status is all functions are working on mbed and ESP8266. See issues for what's left.
 
 ### What this library supports:
 
@@ -16,8 +16,19 @@ Current status is compilation on mbed and simple tasks are working.
 
 ### Known working and supported boards:
 
+| CPU / OS  | Boards using CPU  | Status  |
+| --------- | ----------------- | ------- |
+| ARM mbed. | STM32, nRF.       | Working |
+| ESP8266.  | Node MCU etc.     | Working |
+| SAMD ARM  | MKR, IoT, Zero.   | Not yet |
+| AVR       | Uno, Mega Mighty  | Not yet |
 
 
-This library is not a full RTOS, rather it can be used on top of FreeRTOS via ESP32 or mbed RTOS. It is a complimentary technology that can assist with certain types of work-load. It has a major advantage, that the same code runs on many platforms as listed below.
+## What is TaskManagerIO?
 
+TaskManagerIO library is not a full RTOS, rather it can be used on top of FreeRTOS via ESP32 or mbed RTOS. It is a complimentary technology that can assist with certain types of work-load. It has a major advantage, that the same code runs on many platforms as listed above. It is a core building block of [IoAbstraction](https://github.com/davetcc/IoAbstraction)
+
+## Helping out
+
+At the moment the library is under heavy development. Please contact me first either using an issue here or [https://www.thecoderscorner.com/contact-us/] so that we don't duplicate effort.
  
