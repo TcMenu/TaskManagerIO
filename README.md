@@ -18,14 +18,18 @@ TaskManagerIO has been built from the ground up to handle this new reality while
 
 ### Known working and supported boards:
 
-| CPU / OS  | Boards using CPU  | Status  |
-| --------- | ----------------- | ------- |
-| ARM mbed  | STM32, nRF.       | Working |
-| ESP8266   | Node MCU, Huzzah  | Working |
-| ESP32     | Wifi32, Huzzah32  | Working |
-| SAMD ARM  | MKR, IoT, Zero.   | Working |
-| AVR       | Uno, Mega Mighty  | Working |
+| CPU / OS  | Boards using CPU  | Status    | Threading  |
+| --------- | ----------------- | --------- | ---------- |
+| ARM mbed  | STM32, nRF.       | Supported | CAS locking|
+| ESP8266   | Node MCU, Huzzah  | Supported | Interrupt  |
+| ESP32     | Wifi32, Huzzah32  | Supported | CAS locking|
+| SAMD ARM  | MKR, IoT, Zero.   | Supported | Interrupt  |
+| AVR       | Uno, Mega Mighty  | Supported | Interrupt  |
 
+### Threading key:
+
+* CAS locking: Protected against access even by multiple cores by using CAS task locking
+* Interrupt: Single core device that is protected by an atomic noInterrupt block
 
 ## What is TaskManagerIO?
 
