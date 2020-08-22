@@ -9,6 +9,14 @@
 
 TaskManager taskManager;
 
+namespace tm_internal {
+    LoggingDelegate loggingDelegate = nullptr;
+
+    void setLoggingDelegate(LoggingDelegate delegate) {
+        loggingDelegate = delegate;
+    }
+}
+
 class TmSpinLock {
 private:
     tm_internal::TmAtomicBool* lockObject;
@@ -49,17 +57,20 @@ TaskManager::TaskManager() : taskBlocks {} {
 }
 
 TaskManager::~TaskManager() {
-    for(int i=0; i<numberOfBlocks; i++) {
+    for(taskid_t i=0; i<numberOfBlocks; i++) {
         delete taskBlocks[i];
     }
 }
 
-int TaskManager::findFreeTask() {
+taskid_t TaskManager::findFreeTask() {
     int retries = 0;
     while(retries < 100) {
         for (taskid_t i=0; i<numberOfBlocks;i++) {
             auto taskId = taskBlocks[i]->allocateTask();
-            if(taskId != TASKMGR_INVALIDID) return taskId;
+            if(taskId != TASKMGR_INVALIDID) {
+                tm_internal::tmNotification(tm_internal::TM_INFO_TASK_ALLOC, taskId);
+                return taskId;
+            }
         }
 
         // already full, cannot allocate further.
@@ -72,10 +83,10 @@ int TaskManager::findFreeTask() {
         // if two threads come here at once, only one will be able to enter the allocate block, the other will go into
         // the else block and let other tasks run for a while and then loop again
         {
-            tm_internal::tmNotification(tm_internal::TM_INFO_REALLOC, TASKMGR_INVALIDID);
             TmSpinLock spinLock(&memLockerFlag);
             auto nextIdSpace = taskBlocks[numberOfBlocks - 1]->lastSlot() + 1;
             taskBlocks[numberOfBlocks] = new TaskBlock(nextIdSpace);
+            tm_internal::tmNotification(tm_internal::TM_INFO_REALLOC, numberOfBlocks);
             numberOfBlocks++;
         }
 
@@ -142,6 +153,7 @@ void TaskManager::cancelTask(taskid_t taskId) {
 	if (task) {
 	    taskManager.execute(new ExecWith2Parameters<TimerTask*, TaskManager*>([](TimerTask* task, TaskManager* tm) {
             tm->removeFromQueue(task);
+            tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
             task->clear();
 	    }, task, this), true);
 	}
@@ -161,7 +173,7 @@ void TaskManager::dealWithInterrupt() {
     if(interruptCallback != nullptr) interruptCallback(lastInterruptTrigger);
 
     auto lastSlot = taskBlocks[numberOfBlocks - 1]->lastSlot() + 1;
-    for(int i=0; i<lastSlot; i++) {
+    for(taskid_t i=0; i<lastSlot; i++) {
         auto task = getTask(i);
         if(task->isInUse() && task->isEvent()) {
             task->processEvent();
@@ -195,6 +207,7 @@ void TaskManager::runLoop() {
         }
         else {
             tm->clear();
+            tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
         }
 	}
 }
@@ -355,13 +368,13 @@ void TaskManager::setInterruptCallback(InterruptFn handler) {
 	interruptCallback = handler;
 }
 
-char* TaskManager::checkAvailableSlots(char* data, int dataSize) const {
+char* TaskManager::checkAvailableSlots(char* data, size_t dataSize) const {
     auto maxLen = min(taskid_t(dataSize - 1), taskBlocks[numberOfBlocks - 1]->lastSlot());
-    int position = 0;
+    size_t position = 0;
 
-    for(int i=0; i<numberOfBlocks;i++) {
-	    auto last = taskBlocks[i]->lastSlot();
-	    for(int j=taskBlocks[i]->firstSlot(); j < last; j++) {
+    for(taskid_t i=0; i<numberOfBlocks;i++) {
+	    auto last = taskBlocks[i]->lastSlot() + 1;
+	    for(taskid_t j=taskBlocks[i]->firstSlot(); j < last; j++) {
 	        auto task = taskBlocks[i]->getContainedTask(j);
             data[position] = task->isRepeating() ? 'R' : (task->isInUse() ? 'U' : 'F');
             if (task->isRunning()) data[position] = tolower(data[position]);
@@ -374,7 +387,7 @@ char* TaskManager::checkAvailableSlots(char* data, int dataSize) const {
 }
 
 TimerTask *TaskManager::getTask(taskid_t taskId) {
-    for(int i=0; i<numberOfBlocks; i++) {
+    for(taskid_t i=0; i<numberOfBlocks; i++) {
         auto possibleTask = taskBlocks[i]->getContainedTask(taskId);
         if(possibleTask != nullptr) return possibleTask;
     }

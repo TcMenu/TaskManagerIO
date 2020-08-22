@@ -88,7 +88,7 @@ void twentySecondsUp() {
  */
 void tenSecondsUp() {
     log("Ten seconds up");
-    if(taskManager.scheduleOnce(10000, twentySecondsUp) == 0xff) {
+    if(taskManager.scheduleOnce(10000, twentySecondsUp) == TASKMGR_INVALIDID) {
         log("Failed to register twenty second task");
     }
 }
@@ -97,7 +97,18 @@ void setup() {
     // start up serial, the first line is for 32 bit boards and may require commenting out on some devices.
     Serial.begin(115200);
 
-    Serial.println("Task manager example is starting");
+    Serial.print("Task manager example is starting. Block size = ");
+    Serial.print(DEFAULT_TASK_SIZE);
+    Serial.print(", blocks = ");
+    Serial.println(DEFAULT_TASK_BLOCKS);
+
+    // if you want to receive notifications from task manager, provide a loggingDelegate as below.
+    tm_internal::setLoggingDelegate([] (tm_internal::TmErrorCode code, int id) {
+        Serial.print("TM Notification code=");
+        Serial.print(code);
+        Serial.print(", id=");
+        Serial.println(id);
+    });
 
     // connect a switch to interruptPin, so you can raise interrupts.
     pinMode(interruptPin, INPUT);

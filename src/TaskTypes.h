@@ -6,6 +6,12 @@
 #ifndef TASKMANAGER_IO_TASKTYPES_H
 #define TASKMANAGER_IO_TASKTYPES_H
 
+/**
+ * @file TaskTypes.h
+ *
+ * This class represents the core tasks that are added to task manager, and the TimerTask object itself.
+ */
+
 #include "TaskPlatformDeps.h"
 
 #define TASKMGR_INVALIDID 0xffff
@@ -14,7 +20,7 @@
  * Represents the identifier of a task, it can be used to query, alter and cancel tasks. You should not rely on
  * any characteristics of this type, it could change later, it is essentially no more than a handle to a task.
  */
-typedef int taskid_t;
+typedef unsigned int taskid_t;
 
 /**
  * Any class extending from executable can be passed by reference to task manager and the exec() method will be called
@@ -35,6 +41,7 @@ public:
 
 // forward references to TaskManager to avoid circular include.
 class TaskManager;
+/** the global task manager instance that would normally be associated with the main loop */
 extern TaskManager taskManager;
 
 /**
@@ -59,13 +66,16 @@ public:
 
     /**
      * This method must be implemented by all event handlers. It will be called when the event is first registered with
-     * task manager, then it will be called in whatever number of micro
-     * @return
+     * task manager, then it will be called in whatever number of micros you return from the call. For polling events
+     * you'd set this to whatever frequency you needed to poll on. For interrupt / threaded situations, it may be set
+     * to a very large value, as you would not need to poll.
+     * @return the number of microseconds before calling this method again.
      */
     virtual uint32_t timeOfNextCheck() = 0;
 
     /**
-     * Set the event as triggered, which means it will be executed next time around
+     * Set the event as triggered, which means it will be executed next time around. Usually prefer to use
+     * markTriggeredAndNotify as this also notifies task manager.
      */
     void setTriggered(bool t) {
         triggered = t;
@@ -86,7 +96,9 @@ public:
     }
 
     /**
-     * Sets the task as completed or not completed. Can be called from interrupt safely
+     * Sets the task as completed or not completed. Can be called from interrupt safely. Warning once this is called
+     * assume that task manager will remove this from the queue immediately. Further, if deleteWhenDone was true,
+     * the object would be deleted almost immediately.
      */
     void setCompleted(bool complete) {
         finished = complete;
@@ -110,8 +122,11 @@ typedef void (*TimerFn)();
  * The time units that can be used with the schedule calls.
  */
 enum TimerUnit : uint8_t {
+    /** Schedule the task in microseconds */
     TIME_MICROS = 0,
+    /** Schedule the task in seconds */
     TIME_SECONDS = 1,
+    /** Schedule the task in milliseconds - the default */
     TIME_MILLIS = 2,
 
     TM_TIME_REPEATING = 0x10,
@@ -122,6 +137,11 @@ enum TimerUnit : uint8_t {
     TIME_REP_MILLIS = TIME_MILLIS | TM_TIME_REPEATING,
 };
 
+/**
+ * Internal class.
+ * The execution types stored internally in a task, records what kind of task is in use, and if it needs deleting
+ * when clearing the timer task.
+ */
 enum ExecutionType : uint8_t {
     EXECTYPE_FUNCTION = 0,
     EXECTYPE_EXECUTABLE = 1,
@@ -171,18 +191,51 @@ private:
 public:
     TimerTask();
 
+    /**
+     * Checks if 1. the task is in use, and 2. if the task is ready for execution.
+     * @return true if the task is ready to execute.
+     */
     bool isReady();
 
+    /**
+     * @return the number of microseconds before execution is to take place, 0 means it's due or past due.
+     */
     unsigned long microsFromNow();
 
+    /**
+     * Initialise a task slot with execution information
+     * @param executionInfo the time of execution
+     * @param unit the unit of time measurement
+     * @param execCallback the function to call back
+     */
     void initialise(sched_t executionInfo, TimerUnit unit, TimerFn execCallback);
 
+    /**
+     * Initialise a task slot with execution information
+     * @param executionInfo the time of execution
+     * @param unit the unit of time measurement
+     * @param executable the class instance to call back
+     * @param deleteWhenDone indicates taskmanager owns this memory and should delete it when clear is called.
+     */
     void initialise(sched_t executionInfo, TimerUnit unit, Executable *executable, bool deleteWhenDone);
 
+    /**
+     * Initialise an event structure, which will call the event immediately to get the next poll time
+     * @param event the event object reference
+     * @param deleteWhenDone if task manager owns it, if true, it will be deleted when clear is called.
+     */
     void initialiseEvent(BaseEvent *event, bool deleteWhenDone);
 
+    /**
+     * Atomically checks if the task is in use at the moment.
+     * @return true if in use, otherwise false.
+     */
     bool isInUse() { return tm_internal::atomicReadBool(&taskInUse); }
 
+    /**
+     * Checks if this task is a repeating task.
+     * @return true if repeating, otherwise false.
+     */
     bool isRepeating() const {
         if(ExecutionType(executeMode & EXECTYPE_MASK) == EXECTYPE_EVENT) {
             // if it's an event it repeats until the event is considered "complete"
@@ -194,29 +247,66 @@ public:
         }
     }
 
+    /**
+     * Take a task out of use and clear down all it's fields. Clears the in use flag last for thread safety
+     */
     void clear();
 
+    /**
+     * Checks if it is possible to allocaate this task, IE that it is presently not in use.
+     * @return true if it can be allocated, otherwise false
+     */
     bool allocateIfPossible() {
         return tm_internal::atomicSwapBool(&taskInUse, false, true);
     }
 
+    /**
+     * Marks the task as in a running condition, this prevents the task being re-entered if it yields.
+     */
     void markRunning() { timingInformation = TimerUnit(timingInformation | TM_TIME_RUNNING); }
 
+    /**
+     * Clears the running state of the task, thus allowing it to be scheduled again.
+     */
     void clearRunning() { timingInformation = TimerUnit(timingInformation & ~TM_TIME_RUNNING); }
 
+    /**
+     * @return true if the task is running at the moment, otherwise false. See above running flag methods.
+     */
     bool isRunning() const { return (timingInformation & TM_TIME_RUNNING) != 0; }
 
+    /**
+     * @return true if this timer is representing an event class, otherwise false
+     */
     bool isEvent() {
         auto execType = ExecutionType(executeMode & EXECTYPE_MASK);
         return (isInUse() && execType == EXECTYPE_EVENT);
     }
 
+    /**
+     * Task manager holds a linked list of TimerTask, linked by the next field. It is atomically referenced
+     * @return the next task in the linked list
+     */
     TimerTask *getNext() { return tm_internal::atomicReadPtr(&next); }
 
+    /**
+     * Task manager holds a linked list of TimerTask, linked by the next field. It is atomically referenced
+     * @param nextTask the new next pointer
+     */
     void setNext(TimerTask *nextTask) { tm_internal::atomicWritePtr(&this->next, nextTask); }
 
+    /**
+     * actually does the execution of the task, or in the case of an event, it runs through the processEvent method.
+     */
     void execute();
 
+    /**
+     * This method processes an event in full.
+     *
+     * * If it is triggered it executes it
+     * * If it is complete, it clears it
+     * * Otherwise it calls timeOfNextCheck and reschedules it.
+     */
     void processEvent();
 };
 

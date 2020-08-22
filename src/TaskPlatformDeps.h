@@ -242,12 +242,26 @@ typedef uint32_t sched_t;
 
 namespace tm_internal {
     enum TmErrorCode {
+        /** reallocating memory by adding another block, number of blocks in the second parameter */
         TM_INFO_REALLOC = 1,
+        /** A task slot has been allocated, taskid in second parameter */
+        TM_INFO_TASK_ALLOC = 2,
+        /** A task slot has been freed, taskid in second parameter */
+        TM_INFO_TASK_FREE = 3,
+
+        // warnings and errors are over 100, info level 0..99
+
+        /** probable bug, the lock status was not as expected, please report along with sketch to reproduce  */
         TM_ERROR_LOCK_FAILURE = 100,
+        /** high concurrency is resulting in very high spin counts, performance may be affected */
         TM_WARN_HIGH_SPINCOUNT,
+        /** task manager is full, consider settings the default task settings higher. */
         TM_ERROR_FULL
     };
-    static void (*loggingDelegate)(TmErrorCode code, int task) = nullptr;
+    typedef void (*LoggingDelegate)(TmErrorCode code, int task);
+    extern LoggingDelegate loggingDelegate;
+    void setLoggingDelegate(LoggingDelegate delegate);
+
     inline void tmNotification(TmErrorCode code, int task) {
         if(loggingDelegate) loggingDelegate(code, task);
     }

@@ -2,11 +2,17 @@
 #ifndef TASKMANAGERIO_EXECWITHPARAMETER_H
 #define TASKMANAGERIO_EXECWITHPARAMETER_H
 
+/**
+ * @file ExecWithParameter.h
+ *
+ * Provides convenience helper classes that allow for function callbacks with parameters
+ */
+
 #include "TaskTypes.h"
 
 /**
  * Gives the ability to register a task with task manager that will call a function with a stored parameter
- * An example usage would be to store a Stream upon which to write to. Note that if you use the method below
+ * An example usage would be to store a Stream upon which to write to. Note that if you use the `new` method below
  * you absolutely must provide the deleteWhenDone defaulted parameter as true.
  *
  * taskManager.scheduleFixedRate(1000, new ExecWithParameter<Stream*>(&Serial), TIME_MILLIS, true);
@@ -20,6 +26,11 @@ private:
     void (*fnParam)(TParam);
     TParam param;
 public:
+    /**
+     * Constructs an instance giving the function to call and the parameter to pass to the function
+     * @param fn the function to be called.
+     * @param storedParam the parameter to pass to the function
+     */
     ExecWithParameter(void (*fn)(TParam), TParam storedParam) : fnParam(fn), param(storedParam){}
     ~ExecWithParameter() override = default;
 
@@ -41,6 +52,12 @@ private:
     TParam1 param1;
     TParam2 param2;
 public:
+    /**
+     * Constructs an instance giving the function to call and the two parameters to pass to the function
+     * @param fn the function to call, that must be compatible with the two parameter types
+     * @param storedParam1 the first parameter to pass to the function
+     * @param storedParam2 the second parameter to pass to the function
+     */
     ExecWith2Parameters(void (*fn)(TParam1, TParam2), TParam1 storedParam1, TParam2 storedParam2 ) :
                         fnParam(fn), param1(storedParam1), param2(storedParam2) {}
     ~ExecWith2Parameters() override = default;

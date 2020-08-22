@@ -2,7 +2,8 @@
  * This example shows how to use task manager specifically with mbed. The API is exactly the same
  * between Arduino and mbed, so you can also look at the Arduino examples for inspiration too.
  *
- * This example starts a task, registers an event, and also registers an interrupt with task manager
+ * This example shows advanced usage of taskManager covering scheduled execution, events, putting
+ * events on the queue from anote
  */
 
 #include <mbed.h>
@@ -188,10 +189,10 @@ int main() {
 
     // this is how we get diagnostic information from task manager
     // it will notify of significant events to the loggingDelegate.
-    tm_internal::loggingDelegate = [](tm_internal::TmErrorCode code, int task) {
+    tm_internal::setLoggingDelegate([](tm_internal::TmErrorCode code, int task) {
         log("Taskmgr notification code: ", code);
         log("   -> Task num: ", task);
-    };
+    });
 
     setupTasks();
 

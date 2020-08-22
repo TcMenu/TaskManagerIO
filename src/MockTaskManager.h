@@ -7,7 +7,7 @@
 #define MOCKED_TASK_MANAGER_H
 
 /**
- * @ file MockTaskManager.h
+ * @file MockTaskManager.h
  * 
  * This file contains a version of task manager that is useful for dev & testing.
  * None of the implementations in this file are designed for production use.

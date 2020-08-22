@@ -109,13 +109,13 @@ public:
     }
 
     void clearAll() {
-        for(int i=0; i<arraySize;i++) {
+        for(taskid_t i=0; i<arraySize;i++) {
             tasks[i].clear();
         }
     }
 
     taskid_t allocateTask() {
-        for(int i=0; i<arraySize; i++) {
+        for(taskid_t i=0; i<arraySize; i++) {
             if(tasks[i].allocateIfPossible()) {
                 return i + first;
             }
@@ -123,11 +123,11 @@ public:
         return TASKMGR_INVALIDID;
     }
 
-    int lastSlot() const {
+    taskid_t lastSlot() const {
         return first + arraySize - 1;
     }
 
-    int firstSlot() const {
+    taskid_t firstSlot() const {
         return first;
     }
 };
@@ -288,7 +288,7 @@ public:
 	 */
     void reset() {
 		// all the slots should be cleared
-        for(int i =0; i<numberOfBlocks; i++) {
+        for(taskid_t i =0; i<numberOfBlocks; i++) {
             taskBlocks[i]->clearAll();
         }
 		// the queue must be completely cleared too.
@@ -305,7 +305,7 @@ public:
 	 * @param slotData the char array to fill in with task information. Must be as long as number of tasks + 1.
 	 * @param slotDataSize the size of the array passed in (normally using sizeof).
 	 */
-	char* checkAvailableSlots(char* slotData, int slotDataSize) const;
+	char* checkAvailableSlots(char* slotData, size_t slotDataSize) const;
 
 	/**
 	 * Gets the first task in the run queue. Not often useful outside of testing.
@@ -337,7 +337,7 @@ private:
      * manager storage bigger if needed, or it will return TASKMGR_INVALIDID otherwise.
      * @return either a taskID or TASKMGR_INVALIDID if a slot could not be allocated
      */
-	int findFreeTask();
+	taskid_t findFreeTask();
 
 	/**
 	 * Removes an item from the task queue, so it is no longer in the run linked list. Note that there is a certain
@@ -360,7 +360,7 @@ private:
     void dealWithInterrupt();
 };
 
-/** the global task manager, always use this instance. */
+/** the global task manager, this would normally be associated with the main runLoop. */
 extern TaskManager taskManager;
 
 #endif //TASKMANAGER_IO_H
