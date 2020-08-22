@@ -23,8 +23,8 @@ TaskManagerIO has been built from the ground up to handle this new reality while
 | ARM mbed  | STM32, nRF.       | Working |
 | ESP8266   | Node MCU, Huzzah  | Working |
 | ESP32     | Wifi32, Huzzah32  | Working |
-| SAMD ARM  | MKR, IoT, Zero.   | Not yet |
-| AVR       | Uno, Mega Mighty  | Not yet |
+| SAMD ARM  | MKR, IoT, Zero.   | Working |
+| AVR       | Uno, Mega Mighty  | Working |
 
 
 ## What is TaskManagerIO?
