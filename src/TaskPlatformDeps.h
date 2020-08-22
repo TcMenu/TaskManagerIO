@@ -79,8 +79,9 @@ typedef uint8_t pintype_t;
 
 namespace tm_internal {
     typedef _Atomic(TimerTask*) TimerTaskAtomicPtr;
-    typedef atomic_bool TmAtomicBool;
 
+#if defined(ESP8266)
+    typedef atomic_bool TmAtomicBool;
     /**
      * Sets the boolean to the new value ONLY when the existing value matches expected.
      * @param ptr the bool memory location to compare / swap
@@ -98,14 +99,22 @@ namespace tm_internal {
         interrupts();
         return ret;
     }
-
+#else
+    typedef uint32_t TmAtomicBool; // to use CAS, the bool must be 32 bits wide
+    inline bool atomicSwapBool(TmAtomicBool *ptr, bool expected, bool newValue) {
+        uint32_t exp32 = expected;
+        uint32_t new32 = newValue;
+        uxPortCompareSet(ptr, exp32, &new32);
+        return new32 == expected;
+    }
+#endif
     /**
      * Reads an atomic boolean value
      * @param pPtr the pointer to an atomic boolean value
      * @return the boolean value.
      */
     inline bool atomicReadBool(TmAtomicBool *pPtr) {
-        return atomic_load(pPtr);
+        return *pPtr != 0;
     }
 
     /**
@@ -114,7 +123,7 @@ namespace tm_internal {
      * @param newVal the new value
      */
     inline void atomicWriteBool(TmAtomicBool *pPtr, bool newVal) {
-        atomic_store(pPtr, newVal);
+        *pPtr = newVal;
     }
 
     /**
