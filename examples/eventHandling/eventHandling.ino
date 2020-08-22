@@ -20,7 +20,7 @@ class DiceEvent : public BaseEvent {
 private:
     volatile int diceValue;
     const int desiredValue;
-    static const int NEXT_CHECK_INTERVAL = 60 * 1000000; // 60 seconds away, maximum is about 1 hour.
+    static const uint32_t NEXT_CHECK_INTERVAL = 60UL * 1000000UL; // 60 seconds away, maximum is about 1 hour.
 public:
     DiceEvent(int desired) : desiredValue(desired) {
         diceValue = 0;
@@ -40,7 +40,7 @@ public:
             markTriggeredAndNotify();
         }
 
-        return 250 * 1000; // every 100 milliseconds we roll the dice
+        return 250UL * 1000UL; // every 100 milliseconds we roll the dice
     }
 
     /**

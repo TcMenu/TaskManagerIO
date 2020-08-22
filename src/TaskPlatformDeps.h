@@ -187,7 +187,7 @@ typedef volatile bool TmAtomicBool;
 
     inline TimerTask* atomicReadPtr(TimerTaskAtomicPtr* pPtr) {
         noInterrupts();
-        auto ptr = *ptr;
+        auto ptr = *pPtr;
         interrupts();
         return ptr;
     }
@@ -234,7 +234,11 @@ typedef uint32_t sched_t;
 # define DEFAULT_TASK_SIZE 16
 # define DEFAULT_TASK_BLOCKS 16
 #endif // platform
-#endif // DEFAULT_TASK_SIZE
+#else
+#ifndef DEFAULT_TASK_BLOCKS
+#define DEFAULT_TASK_BLOCKS 8
+#endif // DEFAULT_TASK_BLOCKS not defined when task size is
+#endif // DEFAULT_TASK_SIZE defined already
 
 namespace tm_internal {
     enum TmErrorCode {
