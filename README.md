@@ -16,6 +16,13 @@ TaskManagerIO has been built from the ground up to handle this new reality while
 * Interrupt and external thread event based programming, where you create an event then trigger it from an interrupt or other thread.
 * Marshalled interrupt support, where task manager handles the raw interrupt ISR, and then calls your interrupt task.
 
+## Further documentation and getting help
+
+* [TaskManagerIO documentation pages](https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/)
+* [TaskManagerIO reference documentation](https://www.thecoderscorner.com/ref-docs/taskmanagerio/html)
+* [TCC Libraries community discussion forum](https://www.thecoderscorner.com/jforum/)
+* I also monitor the Arduino forum [https://forum.arduino.cc/], Arduino related questions can be asked there too.
+
 ### Known working and supported boards:
 
 | CPU / OS  | Boards using CPU  | Status    | Threading  |
