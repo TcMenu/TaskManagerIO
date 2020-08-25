@@ -11,7 +11,8 @@ TaskManagerIO is an evolution of the task management class that was originally s
 Further, any sketch that worked on IoAbstraction task manager will work with this library unaffected. Further, it uses a lock free design, based on "compare and exchange" to acheive thread safety on larger boards, atomic operations on AVR, and interrupt locking back-up on other boards.
 
 * Simple coroutines style task management, execute now, at a point in time, or on a schedule.
-* Ability to add events that can be triggered from different threads or interrupts, for either delayed or ASAP execution. 
+* Your tasks do not need to be thread or interrupt safe, they will only be called from task manager.
+* Ability to add events that can be triggered from different threads or interrupts, for either delayed or ASAP execution. Again, always called on the task manager thread.
 * Polled event based programming where you set a schedule to be asked if your event is ready to fire.
 * Marshalled interrupt support, where task manager handles the raw interrupt ISR, and then calls your interrupt task.
 
