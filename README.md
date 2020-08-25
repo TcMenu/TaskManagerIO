@@ -42,13 +42,13 @@ Further, any sketch that worked on IoAbstraction task manager will work with thi
 
 Here we just demonstrate the most basic usage. Take a look at the examples for more complex cases, or the reference documentation that's built from the source.
 
-Include the header file
+Include the header file:
 
 ```
 #include <TaskManagerIO.h>
 ```
 
-In the setup method, add an event that gets fired once in the future:
+In the setup method, add an function callback that gets fired once in the future:
 
 ```
  // Create a task scheduled once every 100 miliis
