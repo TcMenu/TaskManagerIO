@@ -2,18 +2,17 @@
 
 ### Library status
 
-**This library is under heavy development and is not yet ready for anyone to use in their projects. Continue to use the task manager in IoAbstraction for the moment**. 
+**This library is now in BETA phase for a little longer while we do more testing. You can still use task manager in IoAbstraction and switch to this later.**. 
 
 ## Summary and what's supports:
 
-TaskManagerIO is an evolution of the task management class that was originally situated in IoAbstraction, and now moved here. TaskManager is very popular in that framework because it makes programming complex tasks easier, and works across a wide range of devices. Now, we are in a new era of embedded development, where multiple threads (and even cores) have become a relatity. 
+TaskManagerIO is an evolution of the task management class that was originally situated in IoAbstraction. It has been broken out, improved to support events, and threaded access. We are in a new era of embedded development, where RTOS, multiple threads (and even cores) have become a relatity. To make task manager viable going forward, it needed to be capable in these environment, while still protecting tasks from multithreaded concerns. We are pleased to say, this version meets both goals.
 
-TaskManagerIO has been built from the ground up to handle this new reality while still working on many boards. Any sketch that worked on IoAbstraction task manager will work with this library unaffected. Further, it uses a lock free design, based on compare and exchange to acheive thread safety on larger boards,   atomic operations on AVR, and interrupt locking on other boards.
+Further, any sketch that worked on IoAbstraction task manager will work with this library unaffected. Further, it uses a lock free design, based on "compare and exchange" to acheive thread safety on larger boards, atomic operations on AVR, and interrupt locking back-up on other boards.
 
 * Simple coroutines style task management, execute now, at a point in time, or on a schedule.
-* Ability to add events from different threads for either delayed or immediate execution. 
-* Polled event based programming where you set a schedule to be asked if you're event is ready to fire.
-* Interrupt and external thread event based programming, where you create an event then trigger it from an interrupt or other thread.
+* Ability to add events that can be triggered from different threads or interrupts, for either delayed or ASAP execution. 
+* Polled event based programming where you set a schedule to be asked if your event is ready to fire.
 * Marshalled interrupt support, where task manager handles the raw interrupt ISR, and then calls your interrupt task.
 
 ## Further documentation and getting help
