@@ -14,6 +14,7 @@ class TimerTask;
 // check if this is Arduino mbed or regular mbed.
 #if defined(ARDUINO_ARDUINO_NANO33BLE)
 # define IOA_USE_ARDUINO
+# define ARDUINO_MBED_MODE
 # include "Arduino.h"
 #else
 # define IOA_USE_MBED

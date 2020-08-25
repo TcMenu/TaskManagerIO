@@ -14,7 +14,7 @@
 
 #include "TaskPlatformDeps.h"
 
-#define TASKMGR_INVALIDID 0xffff
+#define TASKMGR_INVALIDID 0xffffU
 
 /**
  * Represents the identifier of a task, it can be used to query, alter and cancel tasks. You should not rely on
@@ -153,10 +153,6 @@ enum ExecutionType : uint8_t {
     EXECTYPE_DEL_EXECUTABLE = EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE,
     EXECTYPE_DEL_EVENT = EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE
 };
-
-#define isJobMicros(x)  (((x) & 0x0f)==TIME_MICROS)
-#define isJobMillis(x)  (((x) & 0x0f)==TIME_MILLIS)
-#define isJobSeconds(x) (((x) & 0x0f)==TIME_SECONDS)
 
 /**
  * Internal class that represents a single task slot. You should never have to deal with this class in user code.
@@ -308,6 +304,10 @@ public:
      * * Otherwise it calls timeOfNextCheck and reschedules it.
      */
     void processEvent();
+
+    bool isMicrosSchedule()  { return (timingInformation & 0x0fU)==TIME_MICROS; }
+    bool isMillisSchedule()  { return (timingInformation & 0x0fU)==TIME_MILLIS; }
+    bool isSecondsSchedule()  { return (timingInformation & 0x0fU)==TIME_SECONDS; }
 };
 
 #endif //TASKMANAGER_IO_TASKTYPES_H

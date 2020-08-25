@@ -73,10 +73,14 @@ public:
  */
 class BasicArduinoInterruptAbstraction : public InterruptAbstraction {
     void attachInterrupt(pintype_t pin, RawIntHandler fn, uint8_t mode) override {
+#ifdef ARDUINO_MBED_MODE
+        ::attachInterrupt(pin, fn, (PinStatus)mode);
+#else
         ::attachInterrupt(pin, fn, mode);
+#endif // ARDUINO_MBED_MODE
     }
 };
-#endif
+#endif // IOA_USE_ARDUINO - Arduino Only
 
 /**
  * This is an internal class, and users of the library generally don't see it.

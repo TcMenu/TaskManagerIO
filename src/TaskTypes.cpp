@@ -41,7 +41,7 @@ void TimerTask::initialise(sched_t execInfo, TimerUnit unit, TimerFn execCallbac
     this->callback = execCallback;
     this->executeMode = EXECTYPE_FUNCTION;
 
-    this->scheduledAt = (isJobMicros(timingInformation)) ? micros() : millis();
+    this->scheduledAt = (isMicrosSchedule()) ? micros() : millis();
     tm_internal::atomicWritePtr(&next, nullptr);
 }
 
@@ -51,7 +51,7 @@ void TimerTask::initialise(uint32_t execInfo, TimerUnit unit, Executable* execCa
     this->taskRef = execCallback;
     this->executeMode = deleteWhenDone ? ExecutionType(EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EXECUTABLE;
 
-    this->scheduledAt = (isJobMicros(timingInformation)) ? micros() : millis();
+    this->scheduledAt = (isMicrosSchedule()) ? micros() : millis();
     tm_internal::atomicWritePtr(&next, nullptr);
 }
 
@@ -68,11 +68,11 @@ void TimerTask::initialiseEvent(BaseEvent* event, bool deleteWhenDone) {
 bool TimerTask::isReady() {
     if (!isInUse() || isRunning()) return false;
 
-    if ((isJobMicros(timingInformation)) != 0) {
+    if ((isMicrosSchedule()) != 0) {
         uint32_t delay = myTimingSchedule;
         return (micros() - scheduledAt) >= delay;
     }
-    else if(isJobSeconds(timingInformation)) {
+    else if(isSecondsSchedule()) {
         uint32_t delay = uint32_t(myTimingSchedule) * 1000UL;
         return (millis() - scheduledAt) >= delay;
     }
@@ -84,14 +84,14 @@ bool TimerTask::isReady() {
 
 unsigned long TimerTask::microsFromNow() {
     uint32_t microsFromNow;
-    if (isJobMicros(timingInformation)) {
+    if (isMicrosSchedule()) {
         uint32_t delay = myTimingSchedule;
         uint32_t alreadyTaken = (micros() - scheduledAt);
         microsFromNow =  (delay < alreadyTaken) ? 0 : (delay - alreadyTaken);
     }
     else {
         uint32_t delay = myTimingSchedule;
-        if (isJobSeconds(timingInformation)) {
+        if (isSecondsSchedule()) {
             delay *= 1000UL;
         }
         uint32_t alreadyTaken = (millis() - scheduledAt);
@@ -120,7 +120,7 @@ void TimerTask::execute() {
     }
 
     if (isRepeating()) {
-        this->scheduledAt = isJobMicros(timingInformation) ? micros() : millis();
+        this->scheduledAt = isMicrosSchedule() ? micros() : millis();
     }
 }
 
@@ -141,6 +141,7 @@ void TimerTask::clear() {
 }
 
 void TimerTask::processEvent() {
+    myTimingSchedule = eventRef->timeOfNextCheck();
     if(eventRef->isTriggered()) {
         eventRef->setTriggered(false);
         eventRef->exec();
@@ -150,7 +151,6 @@ void TimerTask::processEvent() {
         clear();
     }
     else {
-        myTimingSchedule = eventRef->timeOfNextCheck();
         scheduledAt = micros();
     }
 }
