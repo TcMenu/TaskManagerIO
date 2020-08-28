@@ -133,7 +133,6 @@ enum TimerUnit : uint8_t {
     TM_TIME_RUNNING = 0x20,
 
     TIME_REP_MICROS = TIME_MICROS | TM_TIME_REPEATING,
-    TIME_REP_SECONDS = TIME_SECONDS | TM_TIME_REPEATING,
     TIME_REP_MILLIS = TIME_MILLIS | TM_TIME_REPEATING,
 };
 
@@ -204,7 +203,7 @@ public:
      * @param unit the unit of time measurement
      * @param execCallback the function to call back
      */
-    void initialise(sched_t executionInfo, TimerUnit unit, TimerFn execCallback);
+    void initialise(sched_t when, TimerUnit unit, TimerFn execCallback, bool repeating);
 
     /**
      * Initialise a task slot with execution information
@@ -213,7 +212,7 @@ public:
      * @param executable the class instance to call back
      * @param deleteWhenDone indicates taskmanager owns this memory and should delete it when clear is called.
      */
-    void initialise(sched_t executionInfo, TimerUnit unit, Executable *executable, bool deleteWhenDone);
+    void initialise(sched_t when, TimerUnit unit, Executable *executable, bool deleteWhenDone, bool repeating);
 
     /**
      * Initialise an event structure, which will call the event immediately to get the next poll time
@@ -221,6 +220,13 @@ public:
      * @param deleteWhenDone if task manager owns it, if true, it will be deleted when clear is called.
      */
     void initialiseEvent(BaseEvent *event, bool deleteWhenDone);
+
+    /**
+     * Called by all the initialise methods to actually do the initial scheduling.
+     * @param when when the task is to take place.
+     * @param unit the time unit upon which it will occur.
+     */
+    void handleScheduling(sched_t when, TimerUnit unit, bool repeating);
 
     /**
      * Atomically checks if the task is in use at the moment.
@@ -305,9 +311,14 @@ public:
      */
     void processEvent();
 
+    /**
+     * @return true if the task is on a microsecond schedule
+     */
     bool isMicrosSchedule()  { return (timingInformation & 0x0fU)==TIME_MICROS; }
+    /**
+     * @return true if the task in on a millisecond schedule
+     */
     bool isMillisSchedule()  { return (timingInformation & 0x0fU)==TIME_MILLIS; }
-    bool isSecondsSchedule()  { return (timingInformation & 0x0fU)==TIME_SECONDS; }
 };
 
 #endif //TASKMANAGER_IO_TASKTYPES_H

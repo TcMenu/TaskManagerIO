@@ -35,34 +35,34 @@ TimerTask::TimerTask() {
     tm_internal::atomicWriteBool(&taskInUse, false);
 }
 
-void TimerTask::initialise(sched_t execInfo, TimerUnit unit, TimerFn execCallback) {
-    this->myTimingSchedule = execInfo;
-    this->timingInformation = unit;
+void TimerTask::initialise(sched_t when, TimerUnit unit, TimerFn execCallback, bool repeating) {
+    handleScheduling(when, unit, repeating);
     this->callback = execCallback;
     this->executeMode = EXECTYPE_FUNCTION;
-
-    this->scheduledAt = (isMicrosSchedule()) ? micros() : millis();
-    tm_internal::atomicWritePtr(&next, nullptr);
 }
 
-void TimerTask::initialise(uint32_t execInfo, TimerUnit unit, Executable* execCallback, bool deleteWhenDone) {
-    this->myTimingSchedule = execInfo;
-    this->timingInformation = unit;
+void TimerTask::handleScheduling(sched_t when, TimerUnit unit, bool repeating) {
+    tm_internal::atomicWritePtr(&next, nullptr);
+
+    if(unit == TIME_SECONDS) {
+        when = when * sched_t(1000);
+        unit = TIME_MILLIS;
+    }
+    this->myTimingSchedule = when;
+    this->timingInformation = repeating ? TimerUnit(unit | TM_TIME_REPEATING)  : unit;
+    this->scheduledAt = (isMicrosSchedule()) ? micros() : millis();
+}
+
+void TimerTask::initialise(uint32_t when, TimerUnit unit, Executable* execCallback, bool deleteWhenDone, bool repeating) {
+    handleScheduling(when, unit, repeating);
     this->taskRef = execCallback;
     this->executeMode = deleteWhenDone ? ExecutionType(EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EXECUTABLE;
-
-    this->scheduledAt = (isMicrosSchedule()) ? micros() : millis();
-    tm_internal::atomicWritePtr(&next, nullptr);
 }
 
 void TimerTask::initialiseEvent(BaseEvent* event, bool deleteWhenDone) {
-    this->timingInformation = (TimerUnit)(TIME_MICROS | TM_TIME_REPEATING);
-    this->myTimingSchedule = 0;
+    handleScheduling(0, TIME_MICROS, true);
     this->eventRef = event;
     this->executeMode = deleteWhenDone ? ExecutionType(EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EVENT;
-
-    this->scheduledAt = micros();
-    tm_internal::atomicWritePtr(&next, nullptr);
 }
 
 bool TimerTask::isReady() {
@@ -71,10 +71,6 @@ bool TimerTask::isReady() {
     if ((isMicrosSchedule()) != 0) {
         uint32_t delay = myTimingSchedule;
         return (micros() - scheduledAt) >= delay;
-    }
-    else if(isSecondsSchedule()) {
-        uint32_t delay = uint32_t(myTimingSchedule) * 1000UL;
-        return (millis() - scheduledAt) >= delay;
     }
     else {
         uint32_t delay = myTimingSchedule;
@@ -91,9 +87,6 @@ unsigned long TimerTask::microsFromNow() {
     }
     else {
         uint32_t delay = myTimingSchedule;
-        if (isSecondsSchedule()) {
-            delay *= 1000UL;
-        }
         uint32_t alreadyTaken = (millis() - scheduledAt);
         microsFromNow = (delay < alreadyTaken) ? 0 : ((delay - alreadyTaken) * 1000UL);
     }

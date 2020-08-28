@@ -101,7 +101,7 @@ taskid_t TaskManager::scheduleOnce(uint32_t when, TimerFn timerFunction, TimerUn
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
-        task->initialise(when, timeUnit, timerFunction);
+        task->initialise(when, timeUnit, timerFunction, false);
 		putItemIntoQueue(task);
 	}
 	return taskId;
@@ -111,7 +111,7 @@ taskid_t TaskManager::scheduleFixedRate(uint32_t when, TimerFn timerFunction, Ti
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
-        task->initialise(when, TimerUnit(timeUnit | TM_TIME_REPEATING), timerFunction);
+        task->initialise(when, timeUnit, timerFunction, true);
 		putItemIntoQueue(task);
 	}
 	return taskId;
@@ -121,7 +121,7 @@ taskid_t TaskManager::scheduleOnce(uint32_t when, Executable* execRef, TimerUnit
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
 	    auto task = getTask(taskId);
-		task->initialise(when, timeUnit, execRef, deleteWhenDone);
+		task->initialise(when, timeUnit, execRef, deleteWhenDone, false);
 		putItemIntoQueue(task);
 	}
 	return taskId;
@@ -131,7 +131,7 @@ taskid_t TaskManager::scheduleFixedRate(uint32_t when, Executable* execRef, Time
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
-        task->initialise(when, TimerUnit(timeUnit | TM_TIME_REPEATING), execRef, deleteWhenDone);
+        task->initialise(when, timeUnit, execRef, deleteWhenDone, true);
 		putItemIntoQueue(task);
 	}
 	return taskId;
