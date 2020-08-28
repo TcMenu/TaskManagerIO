@@ -1,9 +1,5 @@
 ## TaskManagerIO scheduling and event based library for Arudino and mbed
 
-### Library status
-
-**This library is now in BETA phase for a little longer while we do more testing. You can still use task manager in IoAbstraction and switch to this later.**. 
-
 ## Summary and what's supports:
 
 TaskManagerIO is an evolution of the task management class that was originally situated in IoAbstraction. It has been broken out, improved to support events, and threaded access. We are in a new era of embedded development, where RTOS, multiple threads (and even cores) have become a relatity. To make task manager viable going forward, it needed to be capable in these environment, while still protecting tasks from multithreaded concerns. We are pleased to say, this version meets both goals.
@@ -86,9 +82,14 @@ Then in the loop method you need to call:
 
 ## What is TaskManagerIO?
 
-TaskManagerIO library is not a full RTOS, rather it can be used on top of FreeRTOS via ESP32 or mbed RTOS. It is a complimentary technology that can assist with certain types of work-load. It has a major advantage, that the same code runs on many platforms as listed above. It is a core building block of [IoAbstraction](https://github.com/davetcc/IoAbstraction)
+TaskManagerIO library is not a full RTOS, rather it can be used on top of FreeRTOS via ESP32 or mbed RTOS. It is a complimentary technology that can assist with certain types of work-load. It has a major advantage, that the same code runs on many platforms as listed above. It is a core building block of [IoAbstraction](https://github.com/davetcc/IoAbstraction) and [tcMenu framework](https://github.com/davetcc/IoAbstraction)
+
+## Multi-tasking - advanced usage
+
+* On any board, it is safe to add tasks and raise events from any thread. We use whatever atomic operations are available for that board to ensure safety.
+* On any board, you can start another thread and run a task manager on it. Only ever call task-manager's runLoop() from the same thread.
+* On ESP32 FreeRTOS and mbed RTOS6 it is safe to add tasks to a taskManager from another core, on these platforms task manager uses the processors compare and exchange functionality to ensure thread safety as much as possible.
 
 ## Helping out
 
-At the moment the library is under heavy development. Please contact me first either using an issue here or [https://www.thecoderscorner.com/contact-us/] so that we don't duplicate effort.
- 
+We are always glad to accept bug fixes and features. However, please always raise an issue first, and for significant work, it's worth waiting for us to reply first. Please see the contributing guide.
