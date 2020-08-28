@@ -4,7 +4,7 @@
 
 TaskManagerIO is an evolution of the task management class that was originally situated in IoAbstraction. It has been broken out, improved to support events, and threaded access. We are in a new era of embedded development, where RTOS, multiple threads (and even cores) have become a relatity. To make task manager viable going forward, it needed to be capable in these environment, while still protecting tasks from multithreaded concerns. We are pleased to say, this version meets both goals.
 
-Further, any sketch that worked on IoAbstraction task manager will work with this library unaffected. Further, it uses a lock free design, based on "compare and exchange" to acheive thread safety on larger boards, atomic operations on AVR, and interrupt locking back-up on other boards.
+Importantly, any sketch that worked on IoAbstraction task manager will work with this library unaffected. Below, we list the main features of TaskManagerIO:
 
 * Simple coroutines style task management, execute now, at a point in time, or on a schedule.
 * Your tasks do not need to be thread or interrupt safe, they will only be called from task manager.
@@ -85,6 +85,8 @@ Then in the loop method you need to call:
 TaskManagerIO library is not a full RTOS, rather it can be used on top of FreeRTOS via ESP32 or mbed RTOS. It is a complimentary technology that can assist with certain types of work-load. It has a major advantage, that the same code runs on many platforms as listed above. It is a core building block of [IoAbstraction](https://github.com/davetcc/IoAbstraction) and [tcMenu framework](https://github.com/davetcc/IoAbstraction)
 
 ## Multi-tasking - advanced usage
+
+TaskManager uses a lock free design, based on "compare and exchange" to acheive thread safety on larger boards, atomic operations on AVR, and interrupt locking back-up on other boards. Below, we discuss the multi-threaded features in more detail.
 
 * On any board, it is safe to add tasks and raise events from any thread. We use whatever atomic operations are available for that board to ensure safety.
 * On any board, you can start another thread and run a task manager on it. Only ever call task-manager's runLoop() from the same thread.
