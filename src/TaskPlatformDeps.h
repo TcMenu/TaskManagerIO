@@ -100,6 +100,24 @@ namespace tm_internal {
         interrupts();
         return ret;
     }
+
+    /**
+     * Reads an atomic boolean value
+     * @param pPtr the pointer to an atomic boolean value
+     * @return the boolean value.
+     */
+    inline bool atomicReadBool(TmAtomicBool *pPtr) {
+        return atomic_load(pPtr);
+    }
+
+    /**
+     * Writes a boolean value atomically
+     * @param pPtr the atomic ref
+     * @param newVal the new value
+     */
+    inline void atomicWriteBool(TmAtomicBool *pPtr, bool newVal) {
+        atomic_store(pPtr, newVal);
+    }
 #else
     typedef uint32_t TmAtomicBool; // to use CAS, the bool must be 32 bits wide
     inline bool atomicSwapBool(TmAtomicBool *ptr, bool expected, bool newValue) {
@@ -108,7 +126,7 @@ namespace tm_internal {
         uxPortCompareSet(ptr, exp32, &new32);
         return new32 == expected;
     }
-#endif
+
     /**
      * Reads an atomic boolean value
      * @param pPtr the pointer to an atomic boolean value
@@ -126,6 +144,8 @@ namespace tm_internal {
     inline void atomicWriteBool(TmAtomicBool *pPtr, bool newVal) {
         *pPtr = newVal;
     }
+#endif
+
 
     /**
      * Dereferences and returns the value of the pointer at ptr type. On mbed boards this is already an atomic operation and
