@@ -74,14 +74,15 @@ namespace tm_internal {
 }
 #elif defined(ESP8266) || defined(ESP32)
 #include "Arduino.h"
-#include "stdatomic.h"
 typedef uint8_t pintype_t;
 # define IOA_USE_ARDUINO
 
 namespace tm_internal {
-    typedef _Atomic(TimerTask*) TimerTaskAtomicPtr;
 
 #if defined(ESP8266)
+    #include "stdatomic.h"
+    typedef _Atomic(TimerTask*) TimerTaskAtomicPtr;
+
     typedef atomic_bool TmAtomicBool;
     /**
      * Sets the boolean to the new value ONLY when the existing value matches expected.
@@ -118,8 +119,30 @@ namespace tm_internal {
     inline void atomicWriteBool(TmAtomicBool *pPtr, bool newVal) {
         atomic_store(pPtr, newVal);
     }
+
+    /**
+    * Dereferences and returns the value of the pointer at ptr type. On mbed boards this is already an atomic operation and
+    * therefore volatile is enough.
+    * @tparam PTR_TYPE class type of the pointer
+    * @param pPtr reference to memory of the pointer
+    * @return the pointer.
+    */
+    inline TimerTask *atomicReadPtr(TimerTaskAtomicPtr *pPtr) {
+        return atomic_load(pPtr);
+    }
+
+    /**
+     * Dereferences and then sets the memory of the pointer type. On mbed boards this is already an atomic operation
+     * @tparam PTR_TYPE
+     * @param pPtr
+     * @param newValue
+     */
+    inline void atomicWritePtr(TimerTaskAtomicPtr *pPtr, TimerTask *newValue) {
+        atomic_store(pPtr, newValue);
+    }
 #else
-    typedef uint32_t TmAtomicBool; // to use CAS, the bool must be 32 bits wide
+    typedef TimerTask* volatile TimerTaskAtomicPtr;
+    typedef volatile uint32_t TmAtomicBool; // to use CAS, the bool must be 32 bits wide
     inline bool atomicSwapBool(TmAtomicBool *ptr, bool expected, bool newValue) {
         uint32_t exp32 = expected;
         uint32_t new32 = newValue;
@@ -144,8 +167,6 @@ namespace tm_internal {
     inline void atomicWriteBool(TmAtomicBool *pPtr, bool newVal) {
         *pPtr = newVal;
     }
-#endif
-
 
     /**
      * Dereferences and returns the value of the pointer at ptr type. On mbed boards this is already an atomic operation and
@@ -155,7 +176,7 @@ namespace tm_internal {
      * @return the pointer.
      */
     inline TimerTask *atomicReadPtr(TimerTaskAtomicPtr *pPtr) {
-        return atomic_load(pPtr);
+        return *pPtr;
     }
 
     /**
@@ -165,8 +186,9 @@ namespace tm_internal {
      * @param newValue
      */
     inline void atomicWritePtr(TimerTaskAtomicPtr *pPtr, TimerTask *newValue) {
-        atomic_store(pPtr, newValue);
+        *pPtr = newValue;
     }
+#endif
 }
 
 #else
