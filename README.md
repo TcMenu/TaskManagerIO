@@ -28,6 +28,7 @@ Importantly, any sketch that worked on IoAbstraction task manager will work with
 | ESP32     | Wifi32, Huzzah32  | Supported | CAS locking|
 | SAMD ARM  | MKR, IoT, Zero.   | Supported | Interrupt  |
 | AVR       | Uno, Mega Mighty  | Supported | Interrupt  |
+| nRF52840  | Nano BLE          | Supported | CAS locking|
 
 ### Threading key:
 
