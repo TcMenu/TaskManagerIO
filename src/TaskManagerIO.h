@@ -314,4 +314,19 @@ private:
 /** the global task manager, this would normally be associated with the main runLoop. */
 extern TaskManager taskManager;
 
+/**
+ * Converts a duration in milliseconds to microseconds.
+ */
+#define millisToMicros(x) ((x)*1000UL)
+
+/**
+ * Converts a duration in seconds to microseconds.
+ */
+#define secondsToMicros(x) ((x)*1000000UL)
+
+/**
+ * Converts a duration in seconds to milliseconds.
+ */
+#define secondsToMillis(x) ((x)*1000UL)
+
 #endif //TASKMANAGER_IO_H
