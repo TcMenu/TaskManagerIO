@@ -140,12 +140,7 @@ void TimerTask::processEvent() {
         eventRef->exec();
     }
 
-    if(eventRef->isComplete()) {
-        clear();
-    }
-    else {
-        scheduledAt = micros();
-    }
+    scheduledAt = micros();
 }
 
 void BaseEvent::markTriggeredAndNotify() {

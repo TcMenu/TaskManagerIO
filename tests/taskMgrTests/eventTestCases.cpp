@@ -48,14 +48,6 @@ public:
     int getExecCalls() const { return execCalls; }
 } polledEvent;
 
-testF(TimingHelpFixture, testRepeatedRaisingOfEvent) {
-    fail();
-}
-
-testF(TimingHelpFixture, testInterruptTestStartsTask) {
-    fail();
-}
-
 typedef bool (*TMPredicate)();
 
 bool runScheduleUntilMatchOrTimeout(TMPredicate predicate) {
@@ -68,11 +60,13 @@ bool runScheduleUntilMatchOrTimeout(TMPredicate predicate) {
 }
 
 testF(TimingHelpFixture, testRaiseEventStartTaskCompleted) {
-    EnsureExecutionWithin timelyChecker(500);
+    EnsureExecutionWithin timelyChecker(600);
 
-    //taskManager.registerEvent(&polledEvent);
+    // first register the event
+    taskManager.registerEvent(&polledEvent);
 
-    assertTrue(runScheduleUntilMatchOrTimeout([] { return polledEvent.getScheduleCalls() >= 10; } ));
+    // then we
+    assertTrue(runScheduleUntilMatchOrTimeout([] { return polledEvent.getScheduleCalls() >= 3; } ));
 
     // and now we tell the event to trigger itself
     polledEvent.startTriggering();
@@ -82,6 +76,68 @@ testF(TimingHelpFixture, testRaiseEventStartTaskCompleted) {
 
     // and then make sure that the task registed inside the event triggers
     assertTrue(runScheduleUntilMatchOrTimeout([] { return taskWithinEvent; }));
+
+    assertTrue(timelyChecker.ensureTimely());
+}
+
+class TestExternalEvent : public BaseEvent {
+private:
+    int execCalls;
+    bool nextCheckCalled = false;
+public:
+    TestExternalEvent() {
+        execCalls = 0;
+        taskWithinEvent = false;
+    }
+
+    ~TestExternalEvent() override = default;
+
+    void exec() override {
+        execCalls++;
+        taskManager.execute([] {
+            taskWithinEvent = true;
+        });
+    }
+
+    uint32_t timeOfNextCheck() override {
+        nextCheckCalled = true;
+        return 100000000UL;
+    }
+
+    void resetStats() {
+        nextCheckCalled = false;
+        execCalls = 0;
+    }
+    bool wasNextCheckCalled() const { return nextCheckCalled; }
+    int getExecCalls() const { return execCalls; }
+} externalEvent;
+
+testF(TimingHelpFixture, testNotifyEventThatStartsAnotherTask) {
+    EnsureExecutionWithin timelyChecker(100);
+    auto taskId = taskManager.registerEvent(&externalEvent);
+
+    for(int i=0; i<100; i++) {
+        taskWithinEvent = false;
+        externalEvent.markTriggeredAndNotify();
+        taskManager.yieldForMicros(100);
+        assertTrue(runScheduleUntilMatchOrTimeout([] { return taskWithinEvent; }));
+        assertEqual(i + 1, externalEvent.getExecCalls());
+    }
+
+    // now we let the task complete and after one more cycle it should be removed by task manager.
+    externalEvent.setCompleted(true);
+    externalEvent.markTriggeredAndNotify();
+    taskManager.yieldForMicros(100);
+
+    //now it should be completely removed, and whatever we do should not affect task manager
+    externalEvent.resetStats();
+    externalEvent.markTriggeredAndNotify();
+    taskManager.yieldForMicros(200);
+    assertFalse(externalEvent.wasNextCheckCalled());
+    assertEqual(0, externalEvent.getExecCalls());
+
+    // it should not be in task manager any longer.
+    assertFalse(taskManager.getTask(taskId)->isEvent());
 
     assertTrue(timelyChecker.ensureTimely());
 }
