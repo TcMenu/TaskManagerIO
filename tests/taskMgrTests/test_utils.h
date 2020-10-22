@@ -3,6 +3,7 @@
 #define TASKMANGERIO_TEST_UTILS_H
 
 #include <AUnit.h>
+#include <IoLogging.h>
 
 void dumpTasks();
 
@@ -19,6 +20,26 @@ extern int count2;
 extern uint8_t pinNo;
 
 using namespace aunit;
+
+class EnsureExecutionWithin {
+private:
+    unsigned long startMillis;
+    unsigned long maximumTime;
+public:
+    explicit EnsureExecutionWithin(unsigned long maxWaiting) {
+        startMillis = millis();
+        maximumTime = maxWaiting;
+    }
+    bool ensureTimely() {
+        if(millis() > (startMillis + maximumTime)) {
+            serdebugF2("TEST EXECUTION OUT OF RANGE ", int(millis() - startMillis));
+            return false;
+        }
+
+        serdebugF2("Test execution within range: ", int(millis() - startMillis));
+        return true;
+    }
+};
 
 class TimingHelpFixture : public TestOnce {
 protected:

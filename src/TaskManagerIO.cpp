@@ -177,6 +177,14 @@ void TaskManager::dealWithInterrupt() {
         auto task = getTask(i);
         if(task->isInUse() && task->isEvent()) {
             task->processEvent();
+            removeFromQueue(task);
+            if(task->isRepeating()) {
+                putItemIntoQueue(task);
+            }
+            else {
+                task->clear();
+                tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
+            }
         }
     }
 }

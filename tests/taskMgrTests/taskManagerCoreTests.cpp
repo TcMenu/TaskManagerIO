@@ -1,5 +1,6 @@
 
 #include <AUnit.h>
+#include <ExecWithParameter.h>
 #include "TaskManagerIO.h"
 #include "test_utils.h"
 
@@ -150,67 +151,4 @@ testF(TimingHelpFixture, cancellingAJobAfterCreation) {
     assertTasksSpacesTaken(0);
 
     assertEqual(taskManager.getFirstTask(), NULL);
-}
-
-class TestPolledEvent : public BaseEvent {
-private:
-    int execCalls;
-    int scheduleCalls;
-    uint32_t interval;
-    bool triggerNow;
-public:
-    TestPolledEvent() {
-        execCalls = scheduleCalls = 0;
-        interval = 100000; // 100 millis
-        triggerNow = false;
-    }
-    ~TestPolledEvent() override = default;
-
-    void exec() override {
-        execCalls++;
-    }
-
-    uint32_t timeOfNextCheck() override {
-        setTriggered(triggerNow);
-        return interval;
-    }
-
-    void startTriggering() {
-        triggerNow = true;
-        interval = 10000;
-    }
-
-    int getScheduleCalls() const { return scheduleCalls; }
-    int getExecCalls() const { return execCalls; }
-} polledEvent;
-
-
-
-testF(TimingHelpFixture, testRaisingEventsWithTaskMgr) {
-    unsigned long startTime = millis();
-
-    polledEvent.markTriggeredAndNotify();
-
-    taskManager.yieldForMicros(1000);
-
-    assertMoreOrEqual(1, polledEvent.getExecCalls());
-
-    // wait until the task is marked as scheduled.
-    while(polledEvent.getScheduleCalls() < 10 && (millis() - startTime) < 1000) {
-        taskManager.yieldForMicros(10000);
-    }
-
-    // we must have called the schedule call at least 10 times.
-    assertMoreOrEqual(10, polledEvent.getScheduleCalls());
-
-    polledEvent.startTriggering();
-
-    // wait until the task is marked as scheduled.
-    while(polledEvent.getExecCalls() < 10 && (millis() - startTime) < 1000) {
-        taskManager.yieldForMicros(10000);
-    }
-
-    assertMoreOrEqual(10, polledEvent.getExecCalls());
-
-    assertLess(500UL, millis() - startTime);
 }
