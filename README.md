@@ -87,7 +87,7 @@ TaskManagerIO library is not a full RTOS, rather it can be used on top of FreeRT
 
 ## Important notes around scheduling tasks and events
 
-TaskManaagerIO is a cooperative scheduler, and cooperative schedulers by their very nature have unfair semantics. In practice this means that you should not create repeating events or fixed rate schedules that have a 0 delay, if you do, no other tasks will run because the one with 0 delay will always win.  
+TaskManagerIO is a cooperative scheduler, and cooperative schedulers by their very nature have unfair semantics. In practice this means that you should not create repeating events or fixed rate schedules that have a 0 delay, if you do, no other tasks will run because the one with 0 delay will always win.  
 
 ## Multi-tasking - advanced usage
 
