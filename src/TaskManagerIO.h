@@ -11,7 +11,7 @@
 #include "TaskBlock.h"
 
 /**
- * @file TaskManager.h
+ * @file TaskManagerIO.h
  *
  * Task manager is a simple co-routine style implementation for Arduino which supports scheduling work to be done
  * at a given time, repeating tasks, interrupt marshalling and events. It is generally thread safe such that code

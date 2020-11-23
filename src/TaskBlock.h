@@ -1,12 +1,19 @@
-//
-// Created by David Cherry on 28/08/2020.
-//
+/*
+ * Copyright (c) 2018-present https://www.thecoderscorner.com (Nutricherry LTD).
+ * This product is licensed under an Apache license, see the LICENSE file in the top-level directory.
+ */
 
 #ifndef _TASKMANAGERIO_TASKBLOCK_H_
 #define _TASKMANAGERIO_TASKBLOCK_H_
 
 #include <TaskPlatformDeps.h>
 #include <TaskTypes.h>
+
+/**
+ * @file TaskBlock.h
+ *
+ * An internal class definition that is the representation of a task
+ */
 
 /**
  * This is an internal class, and users of the library generally don't see it.
