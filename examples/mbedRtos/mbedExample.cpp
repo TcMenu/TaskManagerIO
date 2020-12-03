@@ -7,7 +7,6 @@
  */
 
 #include <mbed.h>
-#include <rtos.h>
 #include <TaskManagerIO.h>
 
 // Here we create a serial object to write log statements to.

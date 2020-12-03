@@ -19,7 +19,10 @@ class TimerTask;
 #else
 # define IOA_USE_MBED
 # include "mbed.h"
-#endif
+# if defined(MBED_CONF_RTOS_API_PRESENT) || defined(MBED_CONF_RTOS_PRESENT)
+#  include "rtos.h"
+# endif // MBED_CONF_RTOS_API_PRESENT
+#endif // mbed and arduino-mbed checks
 
 #include <mbed_atomic.h>
 typedef uint32_t pintype_t;
