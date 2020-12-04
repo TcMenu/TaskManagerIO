@@ -30,6 +30,8 @@ Importantly, any sketch that worked on IoAbstraction task manager will work with
 | AVR       | Uno, Mega Mighty  | Supported | Interrupt  |
 | nRF52840  | Nano BLE          | Supported | CAS locking|
 
+Note: if you are using a bare-metal mbed build (non-RTOS) on platformIO, for the moment please add an extra build flag: `PIO_NEEDS_RTOS_WORKAROUND` as a short term fix while a long term solution is determined. See issue #17.
+
 ### Threading key:
 
 * CAS locking: Protected against access even by multiple cores by using CAS task locking
