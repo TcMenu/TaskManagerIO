@@ -1,6 +1,7 @@
 //
 // This is an example of using mbed 5 without RTOS support
 // It demonstrates raising a few tasks for scheduling and an interrupt based event.
+// WARNING - I actually have not got a non RTOS board big enough to run this.
 //
 
 #include <TaskManagerIO.h>
@@ -13,8 +14,9 @@ Serial serPort(USBTX, USBRX);
 void log(const char* toLog) {
     char sz[14];
     itoa(millis(), sz, 10);
-    serPort.write(sz, strlen(sz));
-    serPort.write(toLog, strlen(toLog));
+    serPort.puts(sz);
+    serPort.puts(toLog);
+    serPort.putc('\n');
 }
 
 void setup() {
