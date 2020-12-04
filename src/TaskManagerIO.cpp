@@ -409,7 +409,7 @@ Timer ioaTimer;
 
 void yield() {
 
-# if defined(MBED_CONF_RTOS_API_PRESENT) || defined(MBED_CONF_RTOS_PRESENT)
+# if !defined(PIO_NEEDS_RTOS_WORKAROUND)
     ThisThread::yield();
 #else
     wait(0.0000001);

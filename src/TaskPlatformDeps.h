@@ -19,9 +19,9 @@ class TimerTask;
 #else
 # define IOA_USE_MBED
 # include "mbed.h"
-# if defined(MBED_CONF_RTOS_API_PRESENT) || defined(MBED_CONF_RTOS_PRESENT)
+# if !defined(PIO_NEEDS_RTOS_WORKAROUND)
 #  include "rtos.h"
-# endif // MBED_CONF_RTOS_API_PRESENT
+# endif // PIO_NEED_RTOS_WORKAROUND
 #endif // mbed and arduino-mbed checks
 
 #include <mbed_atomic.h>
