@@ -28,9 +28,9 @@ class TaskBlock {
 private:
     TimerTask tasks[DEFAULT_TASK_SIZE];
     const taskid_t first;
-    const taskid_t arraySize;
+    const taskid_t tasksSize;
 public:
-    explicit TaskBlock(taskid_t first_) : first(first_), arraySize(DEFAULT_TASK_SIZE) {}
+    explicit TaskBlock(taskid_t first_) : first(first_), tasksSize(DEFAULT_TASK_SIZE) {}
 
     /**
      * Checks if taskId is contained within this block
@@ -38,7 +38,7 @@ public:
      * @return true if contained, otherwise false
      */
     bool isTaskContained(taskid_t task) const {
-        return task >= first && task < (first + arraySize);
+        return task >= first && task < (first + tasksSize);
     };
 
     TimerTask* getContainedTask(taskid_t task) {
@@ -46,13 +46,13 @@ public:
     }
 
     void clearAll() {
-        for(taskid_t i=0; i<arraySize;i++) {
+        for(taskid_t i=0; i<tasksSize;i++) {
             tasks[i].clear();
         }
     }
 
     taskid_t allocateTask() {
-        for(taskid_t i=0; i<arraySize; i++) {
+        for(taskid_t i=0; i<tasksSize; i++) {
             if(tasks[i].allocateIfPossible()) {
                 return i + first;
             }
@@ -61,7 +61,7 @@ public:
     }
 
     taskid_t lastSlot() const {
-        return first + arraySize - 1;
+        return first + tasksSize - 1;
     }
 
     taskid_t firstSlot() const {

@@ -10,6 +10,10 @@
 #include "TaskTypes.h"
 #include "TaskBlock.h"
 
+#ifdef PARTICLE
+enum InterruptMode;
+#endif // PARTICLE
+
 /**
  * @file TaskManagerIO.h
  *
@@ -74,8 +78,10 @@ public:
  */
 class BasicArduinoInterruptAbstraction : public InterruptAbstraction {
     void attachInterrupt(pintype_t pin, RawIntHandler fn, uint8_t mode) override {
-#ifdef ARDUINO_MBED_MODE
+#if defined(ARDUINO_MBED_MODE)
         ::attachInterrupt(pin, fn, (PinStatus)mode);
+#elif defined(PARTICLE)
+        ::attachInterrupt(pin, fn, (InterruptMode)mode);
 #else
         ::attachInterrupt(pin, fn, mode);
 #endif // ARDUINO_MBED_MODE
