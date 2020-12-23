@@ -29,8 +29,11 @@ Importantly, any sketch that worked on IoAbstraction task manager will work with
 | SAMD ARM  | MKR, IoT, Zero.   | Supported | Interrupt  |
 | AVR       | Uno, Mega Mighty  | Supported | Interrupt  |
 | nRF52840  | Nano BLE          | Supported | CAS locking|
+| Particle  | Photon            | Supported | Interrupt  |
 
 Note: if you are using a bare-metal mbed build (non-RTOS) on platformIO, for the moment please add an extra build flag: `PIO_NEEDS_RTOS_WORKAROUND` as a short term fix while a long term solution is determined. See issue [#17](https://github.com/davetcc/TaskManagerIO/issues/17).
+
+Many thanks to contributors for helping us to confirm that this software runs on a wide range of hardware.
 
 ### Threading key:
 
