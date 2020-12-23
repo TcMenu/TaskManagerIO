@@ -2,43 +2,17 @@
 
 ## Summary and what's supports:
 
-TaskManagerIO is an evolution of the task management class that was originally situated in IoAbstraction. It has been broken out, improved to support events, and threaded access. We are in a new era of embedded development, where RTOS, multiple threads (and even cores) have become a relatity. To make task manager viable going forward, it needed to be capable in these environment, while still protecting tasks from multithreaded concerns. We are pleased to say, this version meets both goals.
+TaskManagerIO is an evolution of the task management class that was originally situated in IoAbstraction. It is backed by a simple queue that supports, immediate queuing, scheduled tasks, and events. It is safe to add tasks from another thread, and safe to trigger events from interrupts. However, your tasks are shielded from threads and interrupts making your code simpler.
 
-Importantly, any sketch that worked on IoAbstraction task manager will work with this library unaffected. Below, we list the main features of TaskManagerIO:
+We are in a new era of embedded development, where RTOS, multiple threads (and even cores) have become a relatity. Any viable task manager needs to be capable in these environments, while still protecting tasks from multithreaded concerns. We are pleased to say, this version meets both goals. Importantly, any sketch that worked on IoAbstraction task manager will work with this library unaffected. 
+
+Below, we list the main features of TaskManagerIO:
 
 * Simple coroutines style task management, execute now, at a point in time, or on a schedule.
 * Your tasks do not need to be thread or interrupt safe, they will only be called from task manager.
 * Ability to add events that can be triggered from different threads or interrupts, for either delayed or ASAP execution. Again, always called on the task manager thread.
 * Polled event based programming where you set a schedule to be asked if your event is ready to fire.
 * Marshalled interrupt support, where task manager handles the raw interrupt ISR, and then calls your interrupt task.
-
-## Further documentation and getting help
-
-* [TaskManagerIO documentation pages](https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/)
-* [TaskManagerIO reference documentation](https://www.thecoderscorner.com/ref-docs/taskmanagerio/html)
-* [TCC Libraries community discussion forum](https://www.thecoderscorner.com/jforum/)
-* I also monitor the Arduino forum [https://forum.arduino.cc/], Arduino related questions can be asked there too.
-
-### Known working and supported boards:
-
-| CPU / OS  | Boards using CPU  | Status    | Threading  |
-| --------- | ----------------- | --------- | ---------- |
-| ARM mbed  | STM32, nRF.       | Supported | CAS locking|
-| ESP8266   | Node MCU, Huzzah  | Supported | Interrupt  |
-| ESP32     | Wifi32, Huzzah32  | Supported | CAS locking|
-| SAMD ARM  | MKR, IoT, Zero.   | Supported | Interrupt  |
-| AVR       | Uno, Mega Mighty  | Supported | Interrupt  |
-| nRF52840  | Nano BLE          | Supported | CAS locking|
-| Particle  | Photon            | Supported | Interrupt  |
-
-Note: if you are using a bare-metal mbed build (non-RTOS) on platformIO, for the moment please add an extra build flag: `PIO_NEEDS_RTOS_WORKAROUND` as a short term fix while a long term solution is determined. See issue [#17](https://github.com/davetcc/TaskManagerIO/issues/17).
-
-Many thanks to contributors for helping us to confirm that this software runs on a wide range of hardware.
-
-### Threading key:
-
-* CAS locking: Protected against access even by multiple cores by using CAS task locking
-* Interrupt: Single core device that is protected by an atomic noInterrupt block
 
 ## Getting started with taskManager
 
@@ -90,6 +64,34 @@ Then in the loop method you need to call:
   	 taskManager.runLoop();
   }
 ```
+
+## Further documentation and getting help
+
+* [TaskManagerIO documentation pages](https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/)
+* [TaskManagerIO reference documentation](https://www.thecoderscorner.com/ref-docs/taskmanagerio/html)
+* [TCC Libraries community discussion forum](https://www.thecoderscorner.com/jforum/)
+* I also monitor the Arduino forum [https://forum.arduino.cc/], Arduino related questions can be asked there too.
+
+### Known working and supported boards:
+
+| CPU / OS  | Boards using CPU  | Status    | Threading  |
+| --------- | ----------------- | --------- | ---------- |
+| ARM mbed  | STM32, nRF.       | Supported | CAS locking|
+| ESP8266   | Node MCU, Huzzah  | Supported | Interrupt  |
+| ESP32     | Wifi32, Huzzah32  | Supported | CAS locking|
+| SAMD ARM  | MKR, IoT, Zero.   | Supported | Interrupt  |
+| AVR       | Uno, Mega Mighty  | Supported | Interrupt  |
+| nRF52840  | Nano BLE          | Supported | CAS locking|
+| Particle  | Photon            | Supported | Interrupt  |
+
+Note: if you are using a bare-metal mbed build (non-RTOS) on platformIO, for the moment please add an extra build flag: `PIO_NEEDS_RTOS_WORKAROUND` as a short term fix while a long term solution is determined. See issue [#17](https://github.com/davetcc/TaskManagerIO/issues/17).
+
+Many thanks to contributors for helping us to confirm that this software runs on a wide range of hardware.
+
+### Threading key:
+
+* CAS locking: Protected against access even by multiple cores by using CAS task locking
+* Interrupt: Single core device that is protected by an atomic noInterrupt block
 
 ## What is TaskManagerIO?
 
