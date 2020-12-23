@@ -53,10 +53,15 @@ Include the header file:
 In the setup method, add an function callback that gets fired once in the future:
 
 ```
- // Create a task scheduled once every 100 miliis
+	// Create a task scheduled once every 100 miliis
 	taskManager.scheduleOnce(100, [] {
 		// some work to be done.
 	});
+	
+	// Create a task that's scheduled every second
+	taskManager.scheduleFixedRate(1, [] {
+		// work to be done.
+	}, TIME_SECONDS);
 ```
 
 You can also create a class that extends from `Executable` and schedule that instead. For example:
