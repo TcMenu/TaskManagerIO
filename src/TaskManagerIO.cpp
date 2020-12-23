@@ -86,8 +86,14 @@ taskid_t TaskManager::findFreeTask() {
             TmSpinLock spinLock(&memLockerFlag);
             auto nextIdSpace = taskBlocks[numberOfBlocks - 1]->lastSlot() + 1;
             taskBlocks[numberOfBlocks] = new TaskBlock(nextIdSpace);
-            tm_internal::tmNotification(tm_internal::TM_INFO_REALLOC, numberOfBlocks);
-            numberOfBlocks++;
+            if(taskBlocks[numberOfBlocks] != nullptr) {
+                tm_internal::tmNotification(tm_internal::TM_INFO_REALLOC, numberOfBlocks);
+                numberOfBlocks++;
+            }
+            else {
+                tm_internal::tmNotification(tm_internal::TM_ERROR_FULL, numberOfBlocks);
+                break;  // no point to continue here, new has failed.
+            }
         }
 
         // count up the tries so far to allocate / wait for allocation.
