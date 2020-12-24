@@ -65,6 +65,11 @@ Then in the loop method you need to call:
   }
 ```
 
+As of V1.1 - Arduino Only - If you want to use the legacy interrupt marshalling support instead of building an event you must additionally include the following:
+
+	#include <BasicInterruptAbstraction.h>
+
+
 ## Further documentation and getting help
 
 * [TaskManagerIO documentation pages](https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/)
