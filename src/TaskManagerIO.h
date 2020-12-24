@@ -70,25 +70,6 @@ public:
     virtual void attachInterrupt(pintype_t pin, RawIntHandler fn, uint8_t mode) = 0;
 };
 
-#ifdef IOA_USE_ARDUINO
-/**
- * For Arduino devices when NOT using IoAbstraction, this is the minimum possible implementation that can call
- * through to the Arduino platform ::attachInterrupt call. You can pass a pointer to one of these to the task manager
- * interrupt functions. If you are using IoAbstraction, all IoAbstractionRef's implement InterruptAbstraction.
- */
-class BasicArduinoInterruptAbstraction : public InterruptAbstraction {
-    void attachInterrupt(pintype_t pin, RawIntHandler fn, uint8_t mode) override {
-#if defined(ARDUINO_MBED_MODE)
-        ::attachInterrupt(pin, fn, (PinStatus)mode);
-#elif defined(PARTICLE)
-        ::attachInterrupt(pin, fn, (InterruptMode)mode);
-#else
-        ::attachInterrupt(pin, fn, mode);
-#endif // ARDUINO_MBED_MODE
-    }
-};
-#endif // IOA_USE_ARDUINO - Arduino Only
-
 /**
  * TaskManager is a lightweight cooperative co-routine implementation for Arduino, it works by scheduling tasks to be
  * done either immediately, or at a future point in time. It is quite efficient at scheduling tasks as internally tasks

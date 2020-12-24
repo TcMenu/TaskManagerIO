@@ -15,7 +15,7 @@ Written by Dave Cherry of thecoderscorner.com in 2017
 
 #include <Arduino.h>
 #include <TaskManagerIO.h>
-#include "../../src/TaskManagerIO.h"
+#include <BasicInterruptAbstraction.h>
 
 // here we define an interrupt capable pin that will be varied in value during execution causing the
 // task manager interrupt handler to be executed. Task manager will marshal the interrupt back into 

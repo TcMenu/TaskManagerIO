@@ -10,19 +10,20 @@
  */
 
 #include <TaskManagerIO.h>
+#include <BasicInterruptAbstraction.h>
 
 // choose any pin on your board to register an interrupt against.
 const int interruptPin = 2;
 
 // now we create an InterruptAbstraction, for this example we use the simple inbuilt ArduinoInterruptExample, but you
 // can also use any IoAbstractionRef from IoAbstraction library too.
-ArduinoInterruptAbstraction interruptAbstraction;
+BasicArduinoInterruptAbstraction interruptAbstraction;
 
 //
 // Here we register the interrupt handler task, it will not be called in an ISR, so it's safe to call most functions
 // apart from delay here.
 //
-void interruptTask(pinid_t thePin) {
+void interruptTask(pintype_t thePin) {
     Serial.println("Interrupt triggered");
 }
 
@@ -30,6 +31,9 @@ void interruptTask(pinid_t thePin) {
 // Here we set the interrupt task handler, and add the interrupt, the syntax is very similar to attachInterrupt.
 //
 void setup() {
+    Serial.begin(115200);
+    Serial.println("Starting interrupt example");
+
     taskManager.setInterruptCallback(interruptTask);
     taskManager.addInterrupt(&interruptAbstraction, interruptPin, CHANGE);
 }
