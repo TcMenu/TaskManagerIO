@@ -80,13 +80,15 @@ namespace tm_internal {
 typedef uint8_t pintype_t;
 # define IOA_USE_ARDUINO
 
-namespace tm_internal {
 
 #if defined(ESP8266)
-    #include "stdatomic.h"
-    typedef _Atomic(TimerTask*) TimerTaskAtomicPtr;
+#include <atomic>
+namespace tm_internal {
 
-    typedef atomic_bool TmAtomicBool;
+    typedef std::atomic<TimerTask *> TimerTaskAtomicPtr;
+
+    typedef std::atomic<uint32_t> TmAtomicBool;
+
     /**
      * Sets the boolean to the new value ONLY when the existing value matches expected.
      * @param ptr the bool memory location to compare / swap
@@ -95,10 +97,11 @@ namespace tm_internal {
      * @return true if the replacement was done, otherwise false
      */
     inline bool atomicSwapBool(TmAtomicBool *ptr, bool expected, bool newValue) {
+        // compare and swap is not implemented on ESP8266
         auto ret = false;
         noInterrupts();
-        if(atomic_load(ptr) == expected) {
-            atomic_store(ptr, newValue);
+        if(ptr->load() == expected) {
+            ptr->store(newValue);
             ret = true;
         }
         interrupts();
@@ -111,7 +114,7 @@ namespace tm_internal {
      * @return the boolean value.
      */
     inline bool atomicReadBool(TmAtomicBool *pPtr) {
-        return atomic_load(pPtr);
+        return pPtr->load();
     }
 
     /**
@@ -120,7 +123,7 @@ namespace tm_internal {
      * @param newVal the new value
      */
     inline void atomicWriteBool(TmAtomicBool *pPtr, bool newVal) {
-        atomic_store(pPtr, newVal);
+        pPtr->store(newVal);
     }
 
     /**
@@ -131,7 +134,7 @@ namespace tm_internal {
     * @return the pointer.
     */
     inline TimerTask *atomicReadPtr(TimerTaskAtomicPtr *pPtr) {
-        return atomic_load(pPtr);
+        return pPtr->load();
     }
 
     /**
@@ -141,9 +144,12 @@ namespace tm_internal {
      * @param newValue
      */
     inline void atomicWritePtr(TimerTaskAtomicPtr *pPtr, TimerTask *newValue) {
-        atomic_store(pPtr, newValue);
+        pPtr->store(newValue);
     }
+}
 #else
+namespace tm_internal {
+
     typedef TimerTask* volatile TimerTaskAtomicPtr;
     typedef volatile uint32_t TmAtomicBool; // to use CAS, the bool must be 32 bits wide
     inline bool atomicSwapBool(TmAtomicBool *ptr, bool expected, bool newValue) {
@@ -191,8 +197,8 @@ namespace tm_internal {
     inline void atomicWritePtr(TimerTaskAtomicPtr *pPtr, TimerTask *newValue) {
         *pPtr = newValue;
     }
-#endif
 }
+#endif
 
 #else
 // fall back to using Arduino regular logic, works for all single core boards. If we end up here for a multicore
