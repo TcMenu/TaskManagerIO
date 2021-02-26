@@ -108,23 +108,33 @@ public:
 
     /**
      * Executes a task manager task as soon as possible. Useful to add work into task manager from another thread of
-     * execution. Shorthand for scheduleOnce(0, task);
+     * execution. Shorthand for scheduleOnce(2, task);
+     *
+     * Why not scheduleOnce with 0 you may ask, taskManager is cooperative which also means it is an unfair scheduler.
+     * Given this, it would always add at the front of the queue if the time was 0, but by making the time 2, we ensure
+     * it is queued behind other things needing immediate execution.
+     *
      * @param workToDo the work to be done
      * @return the task ID that can be queried and cancelled.
      */
     inline taskid_t execute(TimerFn workToDo) {
-        return scheduleOnce(0, workToDo);
+        return scheduleOnce(2, workToDo, TIME_MICROS);
     }
 
     /**
 	 * Executes a task manager task as soon as possible. Useful to add work into task manager from another thread of
-	 * execution. Shorthand for scheduleOnce(0, task);
+	 * execution. Shorthand for scheduleOnce(2, task);
+     *
+     * Why not scheduleOnce with 0 you may ask, taskManager is cooperative which also means it is an unfair scheduler.
+     * Given this, it would always add at the front of the queue if the time was 0, but by making the time 2, we ensure
+     * it is queued behind other things needing immediate execution.
+     *
      * @param execToDo the work to be done
      * @param deleteWhenDone default to false, task manager will reclaim the memory when done with this executable.
      * @return the task ID that can be queried and cancelled.
      */
     inline taskid_t execute(Executable* execToDo, bool deleteWhenDone = false) {
-        return scheduleOnce(0, execToDo, TIME_MICROS, deleteWhenDone);
+        return scheduleOnce(2, execToDo, TIME_MICROS, deleteWhenDone);
     }
 
     /**
