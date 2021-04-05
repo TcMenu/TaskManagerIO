@@ -38,6 +38,16 @@ In the setup method, add an function callback that gets fired once in the future
 	}, TIME_SECONDS);
 ```
 
+From 1.2 onwards: On ESP8266, ESP32, all mbed boards, and most 32 bit Arduino boards you can also capture values. An example of this usage follows:
+
+```
+    int capturedValue = 42;
+    taskManager.scheduleFixedRate(2, [capturedValue]() {
+        log("Execution with captured value = ", capturedValue);
+    }, TIME_SECONDS);
+
+```
+
 You can also create a class that extends from `Executable` and schedule that instead. For example:
 
 ```

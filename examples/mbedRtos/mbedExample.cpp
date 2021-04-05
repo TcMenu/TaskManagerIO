@@ -151,6 +151,11 @@ void setupTasks() {
     // here we create an event that will be triggered on another thread and then notify task manager when it is
     // triggered. We will allocate using new and let task manager delete it when done.
     taskManager.registerEvent(&diceEvent);
+
+    int capturedValue = 42;
+    taskManager.scheduleFixedRate(2, [capturedValue]() {
+        log("Execution with captured value = ", capturedValue);
+    }, TIME_SECONDS);
 }
 
 bool exitThreads = false;

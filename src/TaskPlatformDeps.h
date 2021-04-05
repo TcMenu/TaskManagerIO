@@ -11,6 +11,8 @@ class TimerTask;
 
 #if defined(__MBED__) || defined(ARDUINO_ARDUINO_NANO33BLE)
 
+#define TM_ALLOW_CAPTURED_LAMBDA
+
 // check if this is Arduino mbed or regular mbed.
 #if defined(ARDUINO_ARDUINO_NANO33BLE)
 # define IOA_USE_ARDUINO
@@ -79,6 +81,7 @@ namespace tm_internal {
 #include "Arduino.h"
 typedef uint8_t pintype_t;
 # define IOA_USE_ARDUINO
+# define TM_ALLOW_CAPTURED_LAMBDA
 
 
 #if defined(ESP8266)
@@ -255,6 +258,12 @@ inline void atomicWritePtr(TimerTaskAtomicPtr* pPtr, TimerTask* newValue) {
 #endif // AVR check for PTR atomicity
 }
 #endif // All platform checks
+
+// for all mbed and ESP boards we already enable lambda captures, SAMD is a known extra case that works.
+// we can only enable on larger boards with enough memory to take the extra size of the structures.
+#if !defined(TM_DONT_USE_LAMBDA) && defined(ARDUINO_ARCH_SAMD)
+# define TM_ALLOW_CAPTURED_LAMBDA
+#endif
 
 //
 // Scheduling size. On all boards by default task manager uses 32 bit schedule data to make it more general purpose.

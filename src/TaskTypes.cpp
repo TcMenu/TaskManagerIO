@@ -25,11 +25,13 @@ public:
     }
 };
 
-TimerTask::TimerTask() {
+TimerTask::TimerTask() : callback() {
     // set everything to not in use.
     timingInformation = TIME_MILLIS;
     myTimingSchedule = 0;
-    callback = nullptr;
+    scheduledAt = 0;
+    next = nullptr;
+    taskRef = nullptr;
     executeMode = EXECTYPE_FUNCTION;
     tm_internal::atomicWritePtr(&next, nullptr);
     tm_internal::atomicWriteBool(&taskInUse, false);
@@ -94,8 +96,6 @@ unsigned long TimerTask::microsFromNow() {
 }
 
 void TimerTask::execute() {
-    if (callback == nullptr) return;
-
     RunningState runningState(this);
 
     auto execType = (ExecutionType) (executeMode & EXECTYPE_MASK);
@@ -122,7 +122,10 @@ void TimerTask::clear() {
     if((executeMode & EXECTYPE_DELETE_ON_DONE) != 0 && taskRef != nullptr) {
         delete taskRef;
     }
-    callback = nullptr;
+    taskRef = nullptr;
+#ifdef TM_ALLOW_CAPTURED_LAMBDA
+    callback = std::function<void()>();
+#endif
 
     // clear timing info
     scheduledAt = 0;

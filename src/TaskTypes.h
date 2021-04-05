@@ -116,7 +116,12 @@ public:
 /**
  * Definition of a function to be called back when a scheduled event is required. Takes no parameters, returns nothing.
  */
+#ifdef TM_ALLOW_CAPTURED_LAMBDA
+#include <functional>
+typedef std::function<void()> TimerFn;
+#else
 typedef void (*TimerFn)();
+#endif
 
 /**
  * The time units that can be used with the schedule calls.
@@ -161,12 +166,22 @@ enum ExecutionType : uint8_t {
  */
 class TimerTask {
 private:
+#ifdef TM_ALLOW_CAPTURED_LAMBDA
+    /** the thing that needs to be executed when the time is reached or event is triggered */
+    volatile union {
+        Executable *taskRef;
+        BaseEvent *eventRef;
+    };
+    TimerFn callback;
+#else
     /** the thing that needs to be executed when the time is reached or event is triggered */
     volatile union {
         TimerFn callback;
         Executable *taskRef;
         BaseEvent *eventRef;
     };
+#endif
+
     /** TimerTask is essentially stored in a linked list by time in TaskManager, this represents the next item */
     tm_internal::TimerTaskAtomicPtr next;
 

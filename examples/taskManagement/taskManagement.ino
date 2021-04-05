@@ -10,7 +10,7 @@ shows all the uses of the scheduler, for a simpler example, see the timedBlink e
 To test the interrupt support, wire a switch to pin 2 with pull up/down. Each change of state
 will cause an interrupt.
 
-Written by Dave Cherry of thecoderscorner.com in 2017
+Written by Dave Cherry of TheCodersCorner.com in 2017
 */
 
 #include <Arduino.h>
@@ -21,8 +21,6 @@ Written by Dave Cherry of thecoderscorner.com in 2017
 // task manager interrupt handler to be executed. Task manager will marshal the interrupt back into 
 // a task, so it's safe to call anything you wish during it's execution.
 const int interruptPin = 2;
-
-int taskId = -1;
 
 // When we are not using IoAbstraction with task manager, then if we want to use interrupts, this class
 // provides the absolute bare minimum interrupt abstraction. Normally, we'd use IoAbstraction's device
@@ -40,13 +38,13 @@ void log(const char* logLine) {
 }
 
 /**
- * This is called by taskManager when the interrupt is raised. TaskManager marshalls the
+ * This is called by taskManager when the interrupt is raised. TaskManager marshals the
  * interrupt into a task, so it is safe to call Serial etc here. Be aware that interrupts
  * handled by taskManager are not completely real time, so only use when some slight delay
  * can be accepted. 
  * 
  * - Safe usage: change in rotary encoder, button pressed.
- * - Unsafe usage: over temprature shutdown, safety circuit.
+ * - Unsafe usage: over temperature shutdown, safety circuit.
  */
 void onInterrupt(pintype_t pin) {
 	log("Interrupt triggered");
@@ -114,7 +112,7 @@ void setup() {
     pinMode(interruptPin, INPUT);
 
     //
-    // Now we register some taks, note that on AVR by default there are 6 slots, all others have 10 slots.
+    // Now we register some tasks, note that on AVR by default there are 6 slots, all others have 10 slots.
     // this can be changed in TaskManager.h to your preferred setting.
     //
 
@@ -123,7 +121,7 @@ void setup() {
 
     // Now we schedule oneSecondPulse() to be called every second.
     // keep hold of the ID as we will later cancel it from running.
-    taskId = taskManager.scheduleFixedRate(1, oneSecondPulse, TIME_SECONDS);
+    taskid_t taskId = taskManager.scheduleFixedRate(1, oneSecondPulse, TIME_SECONDS);
 
     //
     // now we do a yield operation, which is similar to delayMicroseconds but allows other
@@ -133,13 +131,16 @@ void setup() {
     taskManager.yieldForMicros(32000);
     log("Waited 32 milli second with yield in setup");
 
-    // now schedule a task to run once in 30 seconds
-    taskManager.scheduleOnce(30000, [] {
+#ifdef TM_ALLOW_CAPTURED_LAMBDA
+    // now schedule a task to run once in 30 seconds, we capture the taskId using a locally captured value. Notice that
+    // this only works on 32 bit boards such as ESP*, ARM, mbed etc.
+    taskManager.scheduleOnce(30000, [taskId]() {
         log("30 seconds up, stopping 1 second job");
 
         // now cancel the one second job we scheduled earlier
         taskManager.cancelTask(taskId);
     });
+#endif
 
     // and another to run repeatedly at 5 second intervals, shows the task slot status
     taskManager.scheduleFixedRate(5, [] {
