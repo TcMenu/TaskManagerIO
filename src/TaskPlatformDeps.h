@@ -328,6 +328,10 @@ namespace tm_internal {
     }
 }
 
+//
+// Here we define an attribute needed for interrupt support on ESP8266 and ESP32 boards, any interrupt code that is
+// going to run on these boards should be marked with this attribute.
+//
 #undef ISR_ATTR
 #if defined(ESP8266)
 # define ISR_ATTR ICACHE_RAM_ATTR
@@ -336,5 +340,15 @@ namespace tm_internal {
 #else
 # define ISR_ATTR
 #endif
+
+//
+// Here we have one last go at determining if we should enable capture lambdas by checking if the functional include
+// is available, we only do so if we are on GCC > 5
+//
+# if !defined(TM_ALLOW_CAPTURED_LAMBDA) && __GNUC__ >= 5
+#if __has_include(<functional>)
+# define TM_ALLOW_CAPTURED_LAMBDA
+#endif
+#endif // GCC>=5 and !TM_ALLOW_CAPTURED_LAMBDA
 
 #endif //TASKMANGERIO_PLATFORMDETERMINATION_H

@@ -72,7 +72,7 @@ public:
      * @param pin the interrupt pin
      */
     InterruptEvent(pintype_t pin) {
-        pinMode(INT_PIN, INPUT_PULLUP);
+        pinMode(pin, INPUT_PULLUP);
         ::attachInterrupt(digitalPinToInterrupt(pin), interruptHandler, RISING);
     }
 
@@ -92,7 +92,9 @@ public:
     void exec() override {
         Serial.println("interrupt event was triggered");
     }
-} interruptEvent(INT_PIN);
+};
+
+InterruptEvent interruptEvent(INT_PIN);
 
 /**
  * THis is a raw ISR, do very little here. In this case we just mark the event as triggered
