@@ -12,7 +12,9 @@ volatile int myVar = 0;
 void log(const char* str, int val) {
     Serial.print(millis());
     Serial.print(' ');
-    Serial.println(str);
+    Serial.print(str);
+    Serial.print('=');
+    Serial.println(val);
 }
 
 //
