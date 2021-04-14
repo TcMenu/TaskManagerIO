@@ -34,6 +34,8 @@ void setup() {
     Serial.begin(115200);
     Serial.println("Starting interrupt example");
 
+    pinMode(interruptPin, INPUT_PULLUP);
+
     taskManager.setInterruptCallback(interruptTask);
     taskManager.addInterrupt(&interruptAbstraction, interruptPin, CHANGE);
 }

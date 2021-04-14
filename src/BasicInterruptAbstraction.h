@@ -16,7 +16,7 @@ inline void internalHandleInterrupt(pintype_t pin, RawIntHandler fn, uint8_t mod
 #elif defined(PARTICLE)
     ::attachInterrupt(pin, fn, (InterruptMode)mode);
 #else
-    ::attachInterrupt(pin, fn, mode);
+    ::attachInterrupt(digitalPinToInterrupt(pin), fn, mode);
 #endif // Interrupt mode conditionals
 }
 
