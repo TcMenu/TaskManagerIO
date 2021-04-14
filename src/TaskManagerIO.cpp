@@ -207,14 +207,9 @@ void TaskManager::runLoop() {
 	// go through the timer (scheduled) tasks in priority order. they are stored
 	// in a linked list ordered by first to be scheduled. So we only go through
 	// these until the first one that isn't ready.
-	TimerTask* tm;
-	while((tm = tm_internal::atomicReadPtr(&first)) != nullptr) {
-#if defined(ESP8266) || defined(ESP32)
-	    // here we are making extra sure we are good citizens on ESP boards
-	    yield();
-#endif
+	TimerTask* tm = tm_internal::atomicReadPtr(&first);
 
-        if (!tm->isReady()) break;
+    while (tm && tm->isReady()) {
 
         // by here we know that the task is in use. If it's in use nothing will touch it until it's marked as
         // available. We can do this part without a lock, knowing that we are the only thing that will touch
@@ -223,14 +218,22 @@ void TaskManager::runLoop() {
         tm->execute();
         tm_internal::atomicWritePtr(&runningTask, nullptr);
         removeFromQueue(tm);
-        if(tm->isRepeating()) {
+        if (tm->isRepeating()) {
             putItemIntoQueue(tm);
-        }
-        else {
+        } else {
             tm->clear();
             tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
         }
-	}
+        if(microsToNextTask() > 0) break;
+        tm = tm->getNext();
+
+#if defined(ESP8266) || defined(ESP32)
+        if(tm) {
+            // here we are making extra sure we are good citizens on ESP boards
+	        yield();
+	    }
+#endif
+    }
 }
 
 void TaskManager::putItemIntoQueue(TimerTask* tm) {
