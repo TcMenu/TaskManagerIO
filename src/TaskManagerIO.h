@@ -98,6 +98,7 @@ protected:
     volatile InterruptFn interruptCallback;
 
     tm_internal::TmAtomicBool memLockerFlag;      // memory and list operations are locked by this flag using the TmSpinLocker
+    tm_internal::TimerTaskAtomicPtr runningTask;
 public:
     /**
      * On all platforms there is a default instance of TaskManager called taskManager. You can create other instances
@@ -279,6 +280,15 @@ public:
         if(maybeTask == nullptr) return 600 * 1000000U; // wait for 10 minutes if there's nothing to do
         else return maybeTask->microsFromNow();
     }
+
+    /**
+     * Gets the currently running task, this is only useful for places where re-entrant checking is needed to ensure
+     * the same task is taking the lock again for example. Never change the task state in this call, and also never
+     * store this pointer.
+     * @return a temporary pointer to the running task that lasts as long as it is running.
+     */
+    tm_internal::TimerTaskAtomicPtr getRunningTask() { return runningTask; }
+
 private:
     /**
      * Finds and allocates the next free task, once this returns a task will either have been allocated, making task

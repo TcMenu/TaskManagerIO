@@ -53,6 +53,7 @@ TaskManager::TaskManager() : taskBlocks {} {
 	lastInterruptTrigger = 0;
 	taskBlocks[0] = new TaskBlock(0);
 	numberOfBlocks = 1;
+	runningTask = nullptr;
 	tm_internal::atomicWriteBool(&memLockerFlag, false);
 }
 
@@ -168,10 +169,12 @@ void TaskManager::cancelTask(taskid_t taskId) {
 void TaskManager::yieldForMicros(uint32_t microsToWait) {
 	yield();
 
+	auto* prevTask = runningTask;
 	unsigned long microsStart = micros();
 	do {
         runLoop();
 	} while((micros() - microsStart) < microsToWait);
+	tm_internal::atomicWritePtr(&runningTask, prevTask);
 }
 
 void TaskManager::dealWithInterrupt() {
@@ -180,9 +183,11 @@ void TaskManager::dealWithInterrupt() {
 
     auto lastSlot = taskBlocks[numberOfBlocks - 1]->lastSlot() + 1;
     for(taskid_t i=0; i<lastSlot; i++) {
-        auto task = getTask(i);
+        auto* task = getTask(i);
         if(task->isInUse() && task->isEvent()) {
+            tm_internal::atomicWritePtr(&runningTask, task);
             task->processEvent();
+            tm_internal::atomicWritePtr(&runningTask, nullptr);
             removeFromQueue(task);
             if(task->isRepeating()) {
                 putItemIntoQueue(task);
@@ -214,7 +219,9 @@ void TaskManager::runLoop() {
         // by here we know that the task is in use. If it's in use nothing will touch it until it's marked as
         // available. We can do this part without a lock, knowing that we are the only thing that will touch
         // the task. We further know that all non-immutable fields on TimerTask are volatile.
+        tm_internal::atomicWritePtr(&runningTask, tm);
         tm->execute();
+        tm_internal::atomicWritePtr(&runningTask, nullptr);
         removeFromQueue(tm);
         if(tm->isRepeating()) {
             putItemIntoQueue(tm);
