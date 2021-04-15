@@ -16,6 +16,7 @@ bool task3RunningPtrCheck = false;
 bool allGood = false;
 
 int runCount1, runCount2, runCount3;
+int captureCount2, captureCount3;
 
 test(testGettingRunningTaskAlwaysCorrect) {
     task1RunningPtrCheck = false;
@@ -44,7 +45,10 @@ test(testGettingRunningTaskAlwaysCorrect) {
 
     serdebugF("Scheduled running task check");
 
+    unsigned long then = millis();
     taskManager.yieldForMicros(millisToMicros(100));
+    int diff = int(millis() - then);
+    assertMore(diff, 90);
 
     serdebugF("Finished running task check, asserting.");
 
@@ -56,43 +60,44 @@ test(testGettingRunningTaskAlwaysCorrect) {
 
 test(testReentrantLock) {
     taskManager.reset();
-    task1RunningPtrCheck = false;
-    task2RunningPtrCheck = false;
-    task3RunningPtrCheck = false;
+
     allGood = true;
     runCount1 = runCount2 = runCount3 = 0;
 
-    runTaskId1 = taskManager.scheduleFixedRate(1, [] {
-        TaskMgrLock locker(testLock);
-
-        task1RunningPtrCheck = true;
-        task2RunningPtrCheck = false;
-        task3RunningPtrCheck = false;
-        taskManager.yieldForMicros(1000);
-        if(task2RunningPtrCheck || task3RunningPtrCheck) {
-            allGood = false;
+    runTaskId1 = taskManager.scheduleFixedRate(10, [] {
+        if(testLock.tryLock()) {
+            if(captureCount3 != runCount3 || captureCount2 != runCount2) {
+                allGood = false;
+            }
+            testLock.unlock();
+        }
+        else {
+            testLock.lock();
+            captureCount2 = runCount2;
+            captureCount3 = runCount3;
         }
         runCount1++;
-    });
+    }, TIME_MILLIS);
 
     runTaskId2 = taskManager.scheduleFixedRate(100, [] {
         TaskMgrLock locker(testLock);
-        task2RunningPtrCheck = true;
         runCount2++;
     }, TIME_MICROS);
 
     taskManager.scheduleFixedRate(50, [] {
         TaskMgrLock locker(testLock);
-        task3RunningPtrCheck = true;
         runCount3++;
     }, TIME_MICROS);
 
-    taskManager.yieldForMicros(millisToMicros(1000));
+    while(runCount1 < 10 || testLock.isLocked()) {
+        taskManager.yieldForMicros(100);
+    }
 
     assertTrue(allGood);
     assertTrue(runTaskId1 != TASKMGR_INVALIDID);
     assertTrue(runTaskId2 != TASKMGR_INVALIDID);
-    assertMore(runCount1, 10000);
-    assertMore(runCount2, 10000);
-    assertMore(runCount3, 10000);
+    assertMore(runCount1, 9);
+    assertLess(runCount1, 12);
+    assertMore(runCount2, 200);
+    assertMore(runCount3, 200);
 }
