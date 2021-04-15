@@ -209,22 +209,22 @@ void TaskManager::runLoop() {
 	// these until the first one that isn't ready.
 	TimerTask* tm = tm_internal::atomicReadPtr(&first);
 
-    while (tm && tm->isReady()) {
-
-        // by here we know that the task is in use. If it's in use nothing will touch it until it's marked as
-        // available. We can do this part without a lock, knowing that we are the only thing that will touch
-        // the task. We further know that all non-immutable fields on TimerTask are volatile.
-        tm_internal::atomicWritePtr(&runningTask, tm);
-        tm->execute();
-        tm_internal::atomicWritePtr(&runningTask, nullptr);
-        removeFromQueue(tm);
-        if (tm->isRepeating()) {
-            putItemIntoQueue(tm);
-        } else {
-            tm->clear();
-            tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
+    while (tm && tm->microsFromNow() == 0) {
+        if(!tm->isRunning()) {
+            // by here we know that the task is in use. If it's in use nothing will touch it until it's marked as
+            // available. We can do this part without a lock, knowing that we are the only thing that will touch
+            // the task. We further know that all non-immutable fields on TimerTask are volatile.
+            tm_internal::atomicWritePtr(&runningTask, tm);
+            tm->execute();
+            tm_internal::atomicWritePtr(&runningTask, nullptr);
+            removeFromQueue(tm);
+            if (tm->isRepeating()) {
+                putItemIntoQueue(tm);
+            } else {
+                tm->clear();
+                tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
+            }
         }
-        if(microsToNextTask() > 0) break;
         tm = tm->getNext();
 
 #if defined(ESP8266) || defined(ESP32)

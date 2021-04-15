@@ -9,21 +9,21 @@
 #include "TaskManagerIO.h"
 
 /**
- * A lock that is intended only for use within tasks, if the lock is taken it will allow task manager to run using
- * it's yield for micros call until the lock becomes free. It is a spin lock, so it is safe to use with task manager.
- * Unless you want to use the spin behaviour in a specific way, prefer using with TaskSafeLock
+ * A very simple lock that can be used to provide a very simple mutex like behaviour based on task manager
+ * atomic constructs. It has the ability to try and spin lock, and also to fully lock in conjunction with
+ * TaskMgrLock class.
  */
-class ReentrantYieldingLock {
+class SimpleSpinLock {
 private:
     tm_internal::TimerTaskAtomicPtr initiatingTask;
-    tm_internal::TmAtomicBool locked;
     volatile uint8_t count;
+    tm_internal::TmAtomicBool locked;
 
 public:
     /**
-     * Construct a reentrant yielding lock that is designed for use within task manager tasks
+     * Construct a lock that represents this object
      */
-    ReentrantYieldingLock() {
+    SimpleSpinLock() {
         initiatingTask = nullptr;
         locked = false;
         count = 0;
@@ -37,11 +37,17 @@ public:
     }
 
     /**
+     * tries the lock and returns immediately if it was already locked by us.
+     * @return true if the lock was already owned by us, otherwise false
+     */
+    bool tryLock();
+
+    /**
      * Attempt to take the lock using a spin wait, it only returns true if the lock was taken.
-     * @param micros micros to wait
+     * @param number of iterations to wait, each iteration is at least 100 mics
      * @return true if the lock was taken, otherwise false
      */
-    bool spinLock(unsigned long micros);
+    bool spinLock(unsigned long iterations);
 
     /**
      * Release the lock taken by spinlock or lock. DOES NOT check that the callee is correct so use carefully.
@@ -55,22 +61,24 @@ public:
 
 /**
  * A wrapper around the task manager locking facilities that allow you to lock within a block of code by putting
- * an instance on the stack, for example:
+ * an instance on the stack. Be very careful not to use yieldForMicros along with this method of locking.
+ * For example:
  *
  * ```
- * ReentrantYieldingLock myLock;
+ * SimpleSpinLock myLock;
  * void myFunctionToLock() {
  *     TaskSafeLock(myLock);
  *     // do some work that needs the lock here. lock will always be released.
+ *     // never use yieldForMicros(..) here or your code may deadlock.
  * }
  * ```
  */
 class TaskMgrLock {
 private:
-    ReentrantYieldingLock& lock;
+    SimpleSpinLock& lock;
 
 public:
-    TaskMgrLock(ReentrantYieldingLock& theLock) : lock(theLock) {
+    TaskMgrLock(SimpleSpinLock& theLock) : lock(theLock) {
         lock.lock();
     }
 

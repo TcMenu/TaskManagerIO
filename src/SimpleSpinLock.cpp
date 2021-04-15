@@ -3,36 +3,45 @@
  * This product is licensed under an Apache license, see the LICENSE file in the top-level directory.
  */
 
-#include "ReentrantYieldingLock.h"
+#include "SimpleSpinLock.h"
 
-bool ReentrantYieldingLock::spinLock(unsigned long micros) {
+bool SimpleSpinLock::tryLock() {
     // if our task already owns the lock then we are good.
-    if(locked && initiatingTask && taskManager.getRunningTask() == initiatingTask) return true;
+    return (locked && initiatingTask && taskManager.getRunningTask() == initiatingTask);
+}
+
+bool SimpleSpinLock::spinLock(unsigned long iterations) {
+    if(tryLock()) {
+        ++count;
+        return true;
+    }
 
     // otherwise we contend to get the lock in a spin wait until we exhaust the micros provided.
-    bool areWeLocked = false;
-    while(!locked && micros > 50) {
-        areWeLocked = tm_internal::atomicSwapBool(&locked, false, true);
-        if (areWeLocked) {
-            ++count;
+    while(iterations) {
+        if (tm_internal::atomicSwapBool(&locked, false, true)) {
             tm_internal::atomicWritePtr(&initiatingTask, taskManager.getRunningTask());
+            ++count;
             return true;
         }
         else {
-            taskManager.yieldForMicros(50);
+            taskManager.yieldForMicros(100);
         }
-        micros -= 50;
+        --iterations;
     }
+
     return false;
 }
 
-void ReentrantYieldingLock::unlock() {
-    if(count != 0) {
-        --count;
+void SimpleSpinLock::unlock() {
+    if(count == 0) {
         return;
     }
-    else {
+
+    --count;
+
+    if(count == 0) {
         tm_internal::atomicWritePtr(&initiatingTask, nullptr);
         tm_internal::atomicWriteBool(&locked, false);
     }
 }
+
