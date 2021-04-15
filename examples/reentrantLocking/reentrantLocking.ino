@@ -26,7 +26,7 @@ void nestedFunction() {
     // here we take a nested lock, which is allowed by our lock, which is essentially reference counted for up to
     // 255 levels of depth.
     TaskMgrLock locker(myLock);
-    log("in nested function", myVar);
+    log("in nested function, lock count", myLock.getLockCount());
 }
 
 void stateMachineLockingAsync();
@@ -45,6 +45,8 @@ void setup() {
         TaskMgrLock locker(myLock);
 
         log("locked synchronously, count", myLock.getLockCount());
+
+        nestedFunction();
 
         // do something that's unlikely to be optimised out, to waste some time
         for(int i=0; i < 100; i++) {
