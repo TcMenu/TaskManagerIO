@@ -75,6 +75,8 @@ Then in the loop method you need to call:
   }
 ```
 
+From 1.2.1 onwards reentrant locking has been added, if you have a shared resource that you need to lock around, you can do this in tasks. See the reentrantLocking example for more details.
+
 As of V1.1 - Arduino Only - If you want to use the legacy interrupt marshalling support instead of building an event you must additionally include the following:
 
 	#include <BasicInterruptAbstraction.h>
