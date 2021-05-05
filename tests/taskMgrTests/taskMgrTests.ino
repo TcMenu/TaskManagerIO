@@ -1,6 +1,7 @@
 
 #include <Arduino.h>
 #include <AUnit.h>
+#include <Wire.h>
 
 using namespace aunit;
 

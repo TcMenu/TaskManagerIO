@@ -169,7 +169,7 @@ void TaskManager::cancelTask(taskid_t taskId) {
 void TaskManager::yieldForMicros(uint32_t microsToWait) {
 	yield();
 
-	auto* prevTask = runningTask;
+	auto& prevTask = runningTask;
 	unsigned long microsStart = micros();
 	do {
         runLoop();

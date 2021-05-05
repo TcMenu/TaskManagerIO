@@ -287,7 +287,7 @@ public:
      * store this pointer.
      * @return a temporary pointer to the running task that lasts as long as it is running.
      */
-    tm_internal::TimerTaskAtomicPtr getRunningTask() { return runningTask; }
+    const tm_internal::TimerTaskAtomicPtr& getRunningTask() { return runningTask; }
 
 private:
     /**
