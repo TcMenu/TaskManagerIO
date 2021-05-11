@@ -40,7 +40,7 @@ In the setup method, add an function callback that gets fired once in the future
 
 From 1.2 onwards: On ESP8266, ESP32, all mbed boards, and most 32 bit Arduino boards you can also *enable* argument capture in lambda expressions. By default, the feature is off because it is quite a heavy feature that many may never use.
 
-To enable set add the following flag to your compile options, and it will be enabled if the board supports it: `-DTM_ENABLE_CAPTURED_LAMBDAS`
+To enable add the following flag to your compile options, and it will be enabled if the board supports it: `-DTM_ENABLE_CAPTURED_LAMBDAS`
 
 An example of this usage follows:
 
