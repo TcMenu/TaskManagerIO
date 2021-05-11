@@ -16,9 +16,11 @@
 class SimpleSpinLock {
 private:
     tm_internal::TimerTaskAtomicPtr initiatingTask;
-    volatile uint8_t count;
+#if defined(IOA_MULTITHREADED)
+    volatile void* currentThread = nullptr;
+#endif
     tm_internal::TmAtomicBool locked;
-
+    volatile uint8_t count;
 public:
     /**
      * Construct a lock that represents this object

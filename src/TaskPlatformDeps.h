@@ -11,16 +11,24 @@ class TimerTask;
 
 #if defined(__MBED__) || defined(ARDUINO_ARDUINO_NANO33BLE)
 
+#if !defined(TM_DONT_USE_CAPTURE)
 #define TM_ALLOW_CAPTURED_LAMBDA
+#endif
 
 // check if this is Arduino mbed or regular mbed.
 #if defined(ARDUINO_ARDUINO_NANO33BLE)
 # define IOA_USE_ARDUINO
 # define ARDUINO_MBED_MODE
 # include "Arduino.h"
+# define IOA_MULTITHREADED
+#include "rtos/rtos.h"
+inline void* getCurrentThreadId() { return rtos::ThisThread::get_id(); }
 #else
 # define IOA_USE_MBED
 # include "mbed.h"
+# define IOA_MULTITHREADED
+inline void* getCurrentThreadId() { return ThisThread::get_id(); }
+
 # if !defined(PIO_NEEDS_RTOS_WORKAROUND)
 #  include "rtos.h"
 # endif // PIO_NEED_RTOS_WORKAROUND
@@ -81,8 +89,9 @@ namespace tm_internal {
 #include "Arduino.h"
 typedef uint8_t pintype_t;
 # define IOA_USE_ARDUINO
+#if !defined(TM_DONT_USE_CAPTURE)
 # define TM_ALLOW_CAPTURED_LAMBDA
-
+#endif
 
 #if defined(ESP8266)
 #include <atomic>
@@ -151,6 +160,9 @@ namespace tm_internal {
     }
 }
 #else
+# define IOA_MULTITHREADED
+inline void* getCurrentThreadId() { return xTaskGetCurrentTaskHandle() ; }
+
 namespace tm_internal {
 
     typedef TimerTask* volatile TimerTaskAtomicPtr;
@@ -261,7 +273,7 @@ inline void atomicWritePtr(TimerTaskAtomicPtr* pPtr, TimerTask* newValue) {
 
 // for all mbed and ESP boards we already enable lambda captures, SAMD is a known extra case that works.
 // we can only enable on larger boards with enough memory to take the extra size of the structures.
-#if !defined(TM_DONT_USE_LAMBDA) && defined(ARDUINO_ARCH_SAMD)
+#if !defined(TM_DONT_USE_CAPTURE) && defined(ARDUINO_ARCH_SAMD)
 # define TM_ALLOW_CAPTURED_LAMBDA
 #endif
 
@@ -345,10 +357,10 @@ namespace tm_internal {
 // Here we have one last go at determining if we should enable capture lambdas by checking if the functional include
 // is available, we only do so if we are on GCC > 5
 //
-# if !defined(TM_ALLOW_CAPTURED_LAMBDA) && __GNUC__ >= 5
+# if !defined(TM_ALLOW_CAPTURED_LAMBDA) && !defined(TM_DONT_USE_CAPTURE) && __GNUC__ >= 5
 #if __has_include(<functional>)
 # define TM_ALLOW_CAPTURED_LAMBDA
-#endif
+#endif // _has_include
 #endif // GCC>=5 and !TM_ALLOW_CAPTURED_LAMBDA
 
 #endif //TASKMANGERIO_PLATFORMDETERMINATION_H
