@@ -37,6 +37,7 @@ void yield();
 uint32_t millis();
 /** MBED ONLY: This defines the micros function to use the standard mbed us timer, as per framework on Arduino */
 uint32_t micros();
+#define delayMicroseconds(x) wait_us(x)
 #endif // IOA_USE_MBED
 
 /**
