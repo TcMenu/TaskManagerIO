@@ -6,7 +6,6 @@
 #ifndef TASKMANAGERIO_RENTRANTYIELDINGLOCK_H
 #define TASKMANAGERIO_RENTRANTYIELDINGLOCK_H
 
-#include <IoLogging.h>
 #include "TaskManagerIO.h"
 
 /**
