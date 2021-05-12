@@ -6,12 +6,14 @@
 #ifndef TASKMANAGERIO_RENTRANTYIELDINGLOCK_H
 #define TASKMANAGERIO_RENTRANTYIELDINGLOCK_H
 
+#include <IoLogging.h>
 #include "TaskManagerIO.h"
 
 /**
  * A very simple lock that can be used to provide a very simple mutex like behaviour based on task manager
  * atomic constructs. It has the ability to try and spin lock, and also to fully lock in conjunction with
- * TaskMgrLock class.
+ * TaskMgrLock class. Use only for activities that do not take very long, it cannot relinquish control to
+ * task manager, it freezes the bus when locked. You must never call yieldForMicros while locked.
  */
 class SimpleSpinLock {
 private:

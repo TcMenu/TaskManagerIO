@@ -32,7 +32,7 @@ bool SimpleSpinLock::spinLock(unsigned long iterations) {
             return true;
         }
         else {
-            taskManager.yieldForMicros(100);
+            delayMicroseconds(50);
         }
         --iterations;
     }
