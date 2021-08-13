@@ -95,7 +95,7 @@ testF(TimingHelpFixture, scheduleManyJobsAtOnce) {
 testF(TimingHelpFixture, scheduleFixedRateTestCase) {
     assertEqual(taskManager.getFirstTask(), NULL);
 
-    auto taskId1 = taskManager.scheduleFixedRate(1, recordingJob, TIME_MILLIS);
+    auto taskId1 = taskManager.scheduleFixedRate(10, recordingJob, TIME_MILLIS);
     auto taskId2 = taskManager.scheduleFixedRate(100, recordingJob2, TIME_MICROS);
 
     // now check the task registration in detail.
@@ -125,7 +125,7 @@ testF(TimingHelpFixture, scheduleFixedRateTestCase) {
     assertMoreOrEqual(timeTaken, (uint32_t) 19);
 
     // now make sure that we got in the right ball park of calls.
-    assertMore(count, 15);
+    assertMore(count, 2);
     assertMore(count2, 150);
 }
 
