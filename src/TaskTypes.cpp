@@ -67,19 +67,6 @@ void TimerTask::initialiseEvent(BaseEvent* event, bool deleteWhenDone) {
     this->executeMode = deleteWhenDone ? ExecutionType(EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EVENT;
 }
 
-bool TimerTask::isReady() {
-    if (!isInUse() || isRunning()) return false;
-
-    if ((isMicrosSchedule()) != 0) {
-        uint32_t delay = myTimingSchedule;
-        return (micros() - scheduledAt) >= delay;
-    }
-    else {
-        uint32_t delay = myTimingSchedule;
-        return (millis() - scheduledAt) >= delay;
-    }
-}
-
 unsigned long TimerTask::microsFromNow() {
     uint32_t microsFromNow;
     if (isMicrosSchedule()) {
@@ -112,7 +99,7 @@ void TimerTask::execute() {
             break;
     }
 
-    if (isRepeating()) {
+    if (isRepeating() && isEnabled()) {
         this->scheduledAt = isMicrosSchedule() ? micros() : millis();
     }
 }

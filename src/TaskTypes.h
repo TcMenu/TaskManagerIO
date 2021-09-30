@@ -153,6 +153,7 @@ enum ExecutionType : uint8_t {
 
     EXECTYPE_MASK = 0x03,
     EXECTYPE_DELETE_ON_DONE = 0x08,
+    EXECTYPE_TASK_DISABLED = 0x10,
 
     EXECTYPE_DEL_EXECUTABLE = EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE,
     EXECTYPE_DEL_EVENT = EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE
@@ -201,11 +202,6 @@ private:
 public:
     TimerTask();
 
-    /**
-     * Checks if 1. the task is in use, and 2. if the task is ready for execution.
-     * @return true if the task is ready to execute.
-     */
-    bool isReady();
 
     /**
      * @return the number of microseconds before execution is to take place, 0 means it's due or past due.
@@ -334,6 +330,21 @@ public:
      * @return true if the task in on a millisecond schedule
      */
     bool isMillisSchedule()  { return (timingInformation & 0x0fU)==TIME_MILLIS; }
+
+    /**
+     * @return if the task is presently enabled - IE it is being scheduled.
+     */
+    bool isEnabled() { return bitRead(executeMode, 4) != 0; }
+
+    /**
+     * Set the task aspi either enabled or disabled. When enabled it is scheduled, otherwise it is not scheduled.
+     * @param ena the enablement status
+     */
+    void setEnabled(bool ena) {
+        uint8_t execTy = executeMode;
+        bitWrite(execTy, 4, (!ena));
+        executeMode = static_cast<ExecutionType>(execTy);
+    }
 };
 
 #endif //TASKMANAGER_IO_TASKTYPES_H

@@ -154,6 +154,17 @@ taskid_t TaskManager::registerEvent(BaseEvent *eventToAdd, bool deleteWhenDone) 
     return taskId;
 }
 
+void TaskManager::setTaskEnabled(taskid_t taskId, bool ena) {
+    auto task = getTask(taskId);
+    if(task == nullptr || !task->isInUse()) return;
+
+    task->setEnabled(ena);
+
+    if(ena && itemNotInQueue(task)) {
+        putItemIntoQueue(task);
+    }
+}
+
 void TaskManager::cancelTask(taskid_t taskId) {
     auto task = getTask(taskId);
     // always create a new task to ensure the task is never, ever cancelled on anything other than the task thread.
@@ -218,7 +229,7 @@ void TaskManager::runLoop() {
             tm->execute();
             tm_internal::atomicWritePtr(&runningTask, nullptr);
             removeFromQueue(tm);
-            if (tm->isRepeating()) {
+            if (tm->isRepeating() && tm->isEnabled()) {
                 putItemIntoQueue(tm);
             } else {
                 tm->clear();
@@ -235,6 +246,18 @@ void TaskManager::runLoop() {
 #endif
     }
 }
+
+bool TaskManager::itemNotInQueue(TimerTask *toCheck) {
+    auto task = tm_internal::atomicReadPtr(&first);
+    // for each node in the list, we check against to check, if it's found then we bail.
+    while(task) {
+        if(task == toCheck) return false;
+        task = task->getNext();
+    }
+    // if we've got to the end and the item is not here, then it's not presently queued
+    return true;
+}
+
 
 void TaskManager::putItemIntoQueue(TimerTask* tm) {
     // we must own the lock before adding to the queue, as someone else could be removing.
