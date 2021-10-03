@@ -56,13 +56,13 @@ void setup() {
     // as this will delete the event when it completes.
     taskManager.registerEvent(new TmLongSchedule(makeHourSchedule(0, 15), [] {
         Serial.print(millis());
-        Serial.print(": Fifteen minutes passed");
+        Serial.println(": Fifteen minutes passed");
     }), true);
 
     // lastly we show the regular event creation method, this task is enabled and disabled by the OO task.
     auto taskId = taskManager.scheduleFixedRate(120, [] {
         Serial.print(millis());
-        Serial.print(": Two minutes");
+        Serial.println(": Two minutes");
     }, TIME_SECONDS);
 
     myTaskExec.setTaskToSuspend(taskId);

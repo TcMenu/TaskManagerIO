@@ -26,6 +26,9 @@ TmLongSchedule::TmLongSchedule(uint32_t milliScheduleNext, TimerFn toExecute) : 
 void TmLongSchedule::exec() {
     lastScheduleTime = millis();
 
+    // never set last schedule time as 0. It is an invalid state.
+    if(lastScheduleTime == 0) lastScheduleTime = 1;
+
     if(isTimerFn && theExecutable != nullptr) {
         fnCallback();
     }
@@ -35,6 +38,10 @@ void TmLongSchedule::exec() {
 }
 
 uint32_t TmLongSchedule::timeOfNextCheck() {
+    // initial state when schedule time is zero, we need avoid running the task at start up and most certainly should
+    // not call millis in a global constructor, who knows what's initialised at that point.
+    if(lastScheduleTime == 0) lastScheduleTime = millis();
+
     // Do not modify this code without fully understanding clock roll and unsigned values.
     uint32_t alreadyTaken = (millis() - lastScheduleTime);
     auto millisFromNow = (milliSchedule < alreadyTaken) ? 0 : ((milliSchedule - alreadyTaken));
