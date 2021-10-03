@@ -326,8 +326,6 @@ private:
      * When an interrupt occurs, this goes through all active tasks
      */
     void dealWithInterrupt();
-
-    bool itemNotInQueue(TimerTask *pTask);
 };
 
 /** the global task manager, this would normally be associated with the main runLoop. */

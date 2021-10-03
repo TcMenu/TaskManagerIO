@@ -92,6 +92,30 @@ testF(TimingHelpFixture, scheduleManyJobsAtOnce) {
     assertTasksSpacesTaken(1);
 }
 
+testF(TimingHelpFixture, enableAndDisableSupport) {
+    static int myTaskCounter = 0;
+    auto myTaskId = taskManager.scheduleFixedRate(1, [] { myTaskCounter++; }, TIME_MILLIS);
+    taskManager.yieldForMicros(20000);
+    assertNotEqual(0, myTaskCounter);
+
+    // "turn off" the task
+    taskManager.setTaskEnabled(myTaskId, false);
+
+    // it can take one cycle for the task to switch enablement state.
+    taskManager.yieldForMicros(2000);
+    auto oldTaskCount = myTaskCounter;
+
+    // now run the task for some time, it should never get scheduled.
+    taskManager.yieldForMicros(20000);
+    assertEqual(myTaskCounter, oldTaskCount);
+
+    // "turn on" the task and see if it increases again
+    taskManager.setTaskEnabled(myTaskId, true);
+    taskManager.yieldForMicros(20000);
+    assertNotEqual(myTaskCounter, oldTaskCount);
+
+}
+
 testF(TimingHelpFixture, scheduleFixedRateTestCase) {
     assertEqual(taskManager.getFirstTask(), NULL);
 

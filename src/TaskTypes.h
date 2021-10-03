@@ -141,6 +141,8 @@ enum TimerUnit : uint8_t {
     TIME_REP_MILLIS = TIME_MILLIS | TM_TIME_REPEATING,
 };
 
+#define EXECMODE_BIT_DISABLED 4
+
 /**
  * Internal class.
  * The execution types stored internally in a task, records what kind of task is in use, and if it needs deleting
@@ -202,7 +204,6 @@ private:
 public:
     TimerTask();
 
-
     /**
      * @return the number of microseconds before execution is to take place, 0 means it's due or past due.
      */
@@ -249,16 +250,7 @@ public:
      * Checks if this task is a repeating task.
      * @return true if repeating, otherwise false.
      */
-    bool isRepeating() const {
-        if(ExecutionType(executeMode & EXECTYPE_MASK) == EXECTYPE_EVENT) {
-            // if it's an event it repeats until the event is considered "complete"
-            return !eventRef->isComplete();
-        }
-        else {
-            // otherwise it's based on the task repeating flag
-            return 0 != (timingInformation & TM_TIME_REPEATING);
-        }
-    }
+    bool isRepeating() const;
 
     /**
      * Take a task out of use and clear down all it's fields. Clears the in use flag last for thread safety
@@ -334,17 +326,13 @@ public:
     /**
      * @return if the task is presently enabled - IE it is being scheduled.
      */
-    bool isEnabled() { return bitRead(executeMode, 4) != 0; }
+    bool isEnabled() { return !bitRead(executeMode, EXECMODE_BIT_DISABLED) != 0; }
 
     /**
      * Set the task aspi either enabled or disabled. When enabled it is scheduled, otherwise it is not scheduled.
      * @param ena the enablement status
      */
-    void setEnabled(bool ena) {
-        uint8_t execTy = executeMode;
-        bitWrite(execTy, 4, (!ena));
-        executeMode = static_cast<ExecutionType>(execTy);
-    }
+    void setEnabled(bool ena);
 };
 
 #endif //TASKMANAGER_IO_TASKTYPES_H

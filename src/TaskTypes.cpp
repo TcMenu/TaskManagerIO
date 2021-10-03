@@ -133,6 +133,24 @@ void TimerTask::processEvent() {
     scheduledAt = micros();
 }
 
+void TimerTask::setEnabled(bool ena) {
+    // We really don't want to do bit-masking directly on a volatile field. Copy to local first.
+    uint8_t execTy = executeMode;
+    bitWrite(execTy, EXECMODE_BIT_DISABLED, (!ena));
+    executeMode = static_cast<ExecutionType>(execTy);
+}
+
+bool TimerTask::isRepeating() const {
+    if(ExecutionType(executeMode & EXECTYPE_MASK) == EXECTYPE_EVENT) {
+        // if it's an event it repeats until the event is considered "complete"
+        return !eventRef->isComplete();
+    }
+    else {
+        // otherwise it's based on the task repeating flag
+        return 0 != (timingInformation & TM_TIME_REPEATING);
+    }
+}
+
 void BaseEvent::markTriggeredAndNotify() {
     setTriggered(true);
     taskMgrAssociation->triggerEvents();
