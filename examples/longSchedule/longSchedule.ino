@@ -25,7 +25,7 @@ public:
 
     void exec() override {
         callCount++;
-        Serial.print("Called my task executable");
+        Serial.print("Called my task executable ");
         Serial.println(callCount);
 
         taskManager.setTaskEnabled(taskToSuspend, enableTask);
@@ -48,7 +48,9 @@ void setup() {
     Serial.begin(115200);
 
     Serial.println("Started long schedule example");
-    // First two long schedules are global variables. If you use references to a variable like this it must be global
+
+    // First two long schedules are global variables.
+    // IMPORTANT NOTE: If you use references to a variable like this THEY MUST BE GLOBAL
     taskManager.registerEvent(&hourAndHalfSchedule);
     taskManager.registerEvent(&onceADaySchedule);
 

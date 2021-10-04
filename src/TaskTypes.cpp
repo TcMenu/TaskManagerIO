@@ -85,6 +85,8 @@ unsigned long TimerTask::microsFromNow() {
 void TimerTask::execute() {
     RunningState runningState(this);
 
+    if(!isEnabled()) return;
+
     auto execType = (ExecutionType) (executeMode & EXECTYPE_MASK);
     switch (execType) {
         case EXECTYPE_EVENT:

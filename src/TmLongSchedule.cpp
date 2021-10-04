@@ -18,7 +18,7 @@ uint32_t makeDaySchedule(int days, int hours) {
 }
 
 TmLongSchedule::TmLongSchedule(uint32_t milliScheduleNext, Executable* toExecute) : milliSchedule(milliScheduleNext),
-        theExecutable(toExecute), lastScheduleTime(0), isTimerFn(true) { }
+        theExecutable(toExecute), lastScheduleTime(0), isTimerFn(false) { }
 
 TmLongSchedule::TmLongSchedule(uint32_t milliScheduleNext, TimerFn toExecute) : milliSchedule(milliScheduleNext),
         fnCallback(toExecute), lastScheduleTime(0), isTimerFn(true) { }
