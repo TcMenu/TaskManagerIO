@@ -154,6 +154,15 @@ taskid_t TaskManager::registerEvent(BaseEvent *eventToAdd, bool deleteWhenDone) 
     return taskId;
 }
 
+void TaskManager::setTaskEnabled(taskid_t taskId, bool ena) {
+    auto task = getTask(taskId);
+    if(task == nullptr || !task->isInUse()) return;
+
+    task->setEnabled(ena);
+
+    if(ena) putItemIntoQueue(task);
+}
+
 void TaskManager::cancelTask(taskid_t taskId) {
     auto task = getTask(taskId);
     // always create a new task to ensure the task is never, ever cancelled on anything other than the task thread.
@@ -240,6 +249,9 @@ void TaskManager::putItemIntoQueue(TimerTask* tm) {
     // we must own the lock before adding to the queue, as someone else could be removing.
     TmSpinLock spinLock(&memLockerFlag);
 
+    // we can never schedule a task that is not enabled.
+    if(!tm->isEnabled()) return;
+
     auto theFirst = tm_internal::atomicReadPtr(&first);
 
 	// shortcut, no first yet, so we are at the top!
@@ -249,7 +261,7 @@ void TaskManager::putItemIntoQueue(TimerTask* tm) {
 		return;
 	}
 
-	// if we need to execute now or before the next task, then we are first. For performance we use unfair semantics
+	// if we need to execute now or before the next task, then we are first. For performance, we use unfair semantics
 	if (theFirst->microsFromNow() >= tm->microsFromNow()) {
         tm->setNext(theFirst);
 		tm_internal::atomicWritePtr(&first, tm);
@@ -271,7 +283,6 @@ void TaskManager::putItemIntoQueue(TimerTask* tm) {
 	}
 
 	// we are at the end of the queue
-	// always set
     tm->setNext(nullptr);
 	previous->setNext(tm);
 }
@@ -285,6 +296,9 @@ void TaskManager::removeFromQueue(TimerTask* tm) {
     // we must own the lock before we can modify the queue, as someone else could otherwise be adding..
     TmSpinLock spinLock(&memLockerFlag);
     auto theFirst = tm_internal::atomicReadPtr(&first);
+
+    // there must be at least one item to proceed.
+    if(theFirst == nullptr) return;
 
     // shortcut, if we are first, just remove us by getting the next and setting first.
 	if (theFirst == tm) {

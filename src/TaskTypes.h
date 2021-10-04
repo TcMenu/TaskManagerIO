@@ -136,10 +136,9 @@ enum TimerUnit : uint8_t {
 
     TM_TIME_REPEATING = 0x10,
     TM_TIME_RUNNING = 0x20,
-
-    TIME_REP_MICROS = TIME_MICROS | TM_TIME_REPEATING,
-    TIME_REP_MILLIS = TIME_MILLIS | TM_TIME_REPEATING,
 };
+
+#define EXECMODE_BIT_DISABLED 4
 
 /**
  * Internal class.
@@ -153,6 +152,7 @@ enum ExecutionType : uint8_t {
 
     EXECTYPE_MASK = 0x03,
     EXECTYPE_DELETE_ON_DONE = 0x08,
+    EXECTYPE_TASK_DISABLED = 0x10,
 
     EXECTYPE_DEL_EXECUTABLE = EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE,
     EXECTYPE_DEL_EVENT = EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE
@@ -202,12 +202,6 @@ public:
     TimerTask();
 
     /**
-     * Checks if 1. the task is in use, and 2. if the task is ready for execution.
-     * @return true if the task is ready to execute.
-     */
-    bool isReady();
-
-    /**
      * @return the number of microseconds before execution is to take place, 0 means it's due or past due.
      */
     unsigned long microsFromNow();
@@ -253,16 +247,7 @@ public:
      * Checks if this task is a repeating task.
      * @return true if repeating, otherwise false.
      */
-    bool isRepeating() const {
-        if(ExecutionType(executeMode & EXECTYPE_MASK) == EXECTYPE_EVENT) {
-            // if it's an event it repeats until the event is considered "complete"
-            return !eventRef->isComplete();
-        }
-        else {
-            // otherwise it's based on the task repeating flag
-            return 0 != (timingInformation & TM_TIME_REPEATING);
-        }
-    }
+    bool isRepeating() const;
 
     /**
      * Take a task out of use and clear down all it's fields. Clears the in use flag last for thread safety
@@ -334,6 +319,17 @@ public:
      * @return true if the task in on a millisecond schedule
      */
     bool isMillisSchedule()  { return (timingInformation & 0x0fU)==TIME_MILLIS; }
+
+    /**
+     * @return if the task is presently enabled - IE it is being scheduled.
+     */
+    bool isEnabled() { return !bitRead(executeMode, EXECMODE_BIT_DISABLED) != 0; }
+
+    /**
+     * Set the task aspi either enabled or disabled. When enabled it is scheduled, otherwise it is not scheduled.
+     * @param ena the enablement status
+     */
+    void setEnabled(bool ena);
 };
 
 #endif //TASKMANAGER_IO_TASKTYPES_H

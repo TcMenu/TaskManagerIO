@@ -216,6 +216,15 @@ public:
     void cancelTask(taskid_t task);
 
     /**
+     * Sets a tasks enable status. An enabled task is scheduled whereas a disabled task is not scheduled. Note that
+     * after disabling a task it may run one more time before switching state. Upon re-enablement then task manager
+     * will put the item back into the run queue if needed.
+     * @param task the task to change status
+     * @param ena the enablement status
+     */
+    void setTaskEnabled(taskid_t task, bool ena);
+
+    /**
      * Use instead of delays or wait loops inside code that needs to perform timing functions. It will
      * not call back until at least `micros` time has passed.
      * @param micros the number of microseconds to wait.
