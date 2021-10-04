@@ -79,6 +79,18 @@ Then in the loop method you need to call:
   }
 ```
 
+To schedule tasks that have an interval of longer than an hour, use the long schedule support as follows (more details in the longSchedule example):
+
+First create a long schedule either globally or using the new operator:
+
+    TmLongSchedule hourAndHalfSchedule(makeHourSchedule(1, 30), &myTaskExec);
+
+Then add it to task manager during setup or as needed:
+
+    taskManager.registerEvent(&hourAndHalfSchedule);
+    
+After this the callback (or event object) registered in the TmLongSchedule will be called whenever scheduled. 
+
 From 1.2.1 onwards reentrant locking has been added, if you have a shared resource that you need to lock around, you can do this in tasks. See the reentrantLocking example for more details.
 
 As of V1.1 - Arduino Only - If you want to use the legacy interrupt marshalling support instead of building an event you must additionally include the following:
