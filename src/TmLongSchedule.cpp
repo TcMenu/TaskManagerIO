@@ -18,10 +18,10 @@ uint32_t makeDaySchedule(int days, int hours) {
 }
 
 TmLongSchedule::TmLongSchedule(uint32_t milliScheduleNext, Executable* toExecute) : milliSchedule(milliScheduleNext),
-        theExecutable(toExecute), lastScheduleTime(0), isTimerFn(false) { }
+        fnCallback(nullptr), theExecutable(toExecute), lastScheduleTime(0) { }
 
 TmLongSchedule::TmLongSchedule(uint32_t milliScheduleNext, TimerFn toExecute) : milliSchedule(milliScheduleNext),
-        fnCallback(toExecute), lastScheduleTime(0), isTimerFn(true) { }
+        fnCallback(toExecute), theExecutable(nullptr), lastScheduleTime(0) { }
 
 void TmLongSchedule::exec() {
     lastScheduleTime = millis();
@@ -29,12 +29,13 @@ void TmLongSchedule::exec() {
     // never set last schedule time as 0. It is an invalid state.
     if(lastScheduleTime == 0) lastScheduleTime = 1;
 
-    if(isTimerFn && theExecutable != nullptr) {
-        fnCallback();
-    }
-    else {
+    if(theExecutable != nullptr) {
         theExecutable->exec();
     }
+    else if(fnCallback != nullptr) {
+        fnCallback();
+    }
+
 }
 
 uint32_t TmLongSchedule::timeOfNextCheck() {

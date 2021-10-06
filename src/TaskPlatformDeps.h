@@ -345,9 +345,7 @@ namespace tm_internal {
 // going to run on these boards should be marked with this attribute.
 //
 #undef ISR_ATTR
-#if defined(ESP8266)
-# define ISR_ATTR ICACHE_RAM_ATTR
-#elif defined(ESP32)
+#if defined(ESP8266) || defined(ESP32)
 # define ISR_ATTR IRAM_ATTR
 #else
 # define ISR_ATTR

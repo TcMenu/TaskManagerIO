@@ -8,6 +8,9 @@
 
 #include <mbed.h>
 #include <TaskManagerIO.h>
+#include <TmLongSchedule.h>
+
+#define LOG_TASK_MANGER_DEBUG 0
 
 // Here we create a serial object to write log statements to.
 BufferedSerial console(USBTX, USBRX, 115200);
@@ -156,6 +159,12 @@ void setupTasks() {
     taskManager.scheduleFixedRate(2, [capturedValue]() {
         log("Execution with captured value = ", capturedValue);
     }, TIME_SECONDS);
+
+    // this shows how to create a long schedule event using the new operator, make sure the second parameter is true
+    // as this will delete the event when it completes.
+    taskManager.registerEvent(new TmLongSchedule(makeHourSchedule(0, 15), [] {
+        log("Fifteen minutes passed");
+    }), true);
 }
 
 bool exitThreads = false;
@@ -191,12 +200,14 @@ void anotherProc() {
 int main() {
     log("starting up taskmanager example");
 
+#if LOG_TASK_MANGER_DEBUG != 0
     // this is how we get diagnostic information from task manager
     // it will notify of significant events to the loggingDelegate.
     tm_internal::setLoggingDelegate([](tm_internal::TmErrorCode code, int task) {
         log("Taskmgr notification code: ", code);
         log("   -> Task num: ", task);
     });
+#endif //LOG_TASK_MANGER_DEBUG
 
     setupTasks();
 

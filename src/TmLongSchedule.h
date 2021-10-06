@@ -15,14 +15,20 @@
 class TmLongSchedule : public BaseEvent {
 private:
     const uint32_t milliSchedule;
-    union {
-        const TimerFn fnCallback;
-        Executable *const theExecutable;
-    };
+    const TimerFn fnCallback;
+    Executable *const theExecutable;
     uint32_t lastScheduleTime;
-    const bool isTimerFn;
 public:
+    /** Create a schedule that will call back a TimerFn functional callback.
+     * @param milliSchedule the schedule to call back on
+     * @param callee the functional callback
+     */
     TmLongSchedule(uint32_t milliSchedule, TimerFn callee);
+    /**
+     * Create schedule that will call the exec() method on an Executable
+     * @param milliSchedule the schedule to call back on
+     * @param callee the object extending from Executable
+     */
     TmLongSchedule(uint32_t milliSchedule, Executable* callee);
 
     void exec() override;

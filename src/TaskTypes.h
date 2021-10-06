@@ -138,8 +138,6 @@ enum TimerUnit : uint8_t {
     TM_TIME_RUNNING = 0x20,
 };
 
-#define EXECMODE_BIT_DISABLED 4
-
 /**
  * Internal class.
  * The execution types stored internally in a task, records what kind of task is in use, and if it needs deleting
@@ -152,7 +150,6 @@ enum ExecutionType : uint8_t {
 
     EXECTYPE_MASK = 0x03,
     EXECTYPE_DELETE_ON_DONE = 0x08,
-    EXECTYPE_TASK_DISABLED = 0x10,
 
     EXECTYPE_DEL_EXECUTABLE = EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE,
     EXECTYPE_DEL_EVENT = EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE
@@ -198,6 +195,8 @@ private:
     tm_internal::TmAtomicBool taskInUse;
     /** the mode in which the task executes, IE call a function, call an event or executable. Also if memory is owned */
     volatile ExecutionType executeMode;
+    /** Stores a flag to indicate if the task is enabled */
+    tm_internal::TmAtomicBool taskEnabled;
 public:
     TimerTask();
 
@@ -323,13 +322,13 @@ public:
     /**
      * @return if the task is presently enabled - IE it is being scheduled.
      */
-    bool isEnabled() { return !bitRead(executeMode, EXECMODE_BIT_DISABLED) != 0; }
+    bool isEnabled() { return tm_internal::atomicReadBool(&taskEnabled); }
 
     /**
      * Set the task aspi either enabled or disabled. When enabled it is scheduled, otherwise it is not scheduled.
      * @param ena the enablement status
      */
-    void setEnabled(bool ena);
+    void setEnabled(bool ena) { tm_internal::atomicWriteBool(&taskEnabled, ena); }
 };
 
 #endif //TASKMANAGER_IO_TASKTYPES_H

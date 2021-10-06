@@ -53,6 +53,7 @@ void TimerTask::handleScheduling(sched_t when, TimerUnit unit, bool repeating) {
     this->myTimingSchedule = when;
     this->timingInformation = repeating ? TimerUnit(unit | TM_TIME_REPEATING)  : unit;
     this->scheduledAt = (isMicrosSchedule()) ? micros() : millis();
+    taskEnabled = true;
 }
 
 void TimerTask::initialise(uint32_t when, TimerUnit unit, Executable* execCallback, bool deleteWhenDone, bool repeating) {
@@ -133,13 +134,6 @@ void TimerTask::processEvent() {
     }
 
     scheduledAt = micros();
-}
-
-void TimerTask::setEnabled(bool ena) {
-    // We really don't want to do bit-masking directly on a volatile field. Copy to local first.
-    uint8_t execTy = executeMode;
-    bitWrite(execTy, EXECMODE_BIT_DISABLED, (!ena));
-    executeMode = static_cast<ExecutionType>(execTy);
 }
 
 bool TimerTask::isRepeating() const {
