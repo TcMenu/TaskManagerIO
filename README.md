@@ -28,12 +28,12 @@ In the setup method, add an function callback that gets fired once in the future
 
 ```
 	// Create a task scheduled once every 100 miliis
-	taskManager.scheduleOnce(100, [] {
+	taskid_t taskId = taskManager.scheduleOnce(100, [] {
 		// some work to be done.
 	});
 	
 	// Create a task that's scheduled every second
-	taskManager.scheduleFixedRate(1, [] {
+	taskid_t taskId = taskManager.scheduleFixedRate(1, [] {
 		// work to be done.
 	}, TIME_SECONDS);
 ```
@@ -91,9 +91,13 @@ Then add it to task manager during setup or as needed:
     
 After this the callback (or event object) registered in the TmLongSchedule will be called whenever scheduled. 
 
-From 1.2.1 onwards reentrant locking has been added, if you have a shared resource that you need to lock around, you can do this in tasks. See the reentrantLocking example for more details.
+To enable or disable a task
 
-As of V1.1 - Arduino Only - If you want to use the legacy interrupt marshalling support instead of building an event you must additionally include the following:
+	taskManager.setTaskEnabled(taskId, enabled);
+
+If you have a shared resource that you need to lock around, you can do this in tasks. See the reentrantLocking example for more details.
+
+Arduino Only - If you want to use the legacy interrupt marshalling support instead of building an event you must additionally include the following:
 
 	#include <BasicInterruptAbstraction.h>
 
