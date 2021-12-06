@@ -1,6 +1,6 @@
 ## TaskManagerIO scheduling and event based library for Arudino and mbed
 
-## Summary and what's supports:
+Dave Cherry / TheCodersCorner.com make this library available for you to use. It takes me significant effort to keep all my libraries current and working on a wide range of boards. Please consider making at least a one off donation via the sponsor button if you find it useful. In forks, please keep text to here intact.
 
 TaskManagerIO is an evolution of the task management class that was originally situated in IoAbstraction. It is backed by a simple queue that supports, immediate queuing, scheduled tasks, and events. It is safe to add tasks from another thread, and safe to trigger events from interrupts. However, your tasks are shielded from threads and interrupts making your code simpler.
 
@@ -106,6 +106,9 @@ Arduino Only - If you want to use the legacy interrupt marshalling support inste
 
 * [TaskManagerIO documentation pages](https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/)
 * [TaskManagerIO reference documentation](https://www.thecoderscorner.com/ref-docs/taskmanagerio/html)
+
+There is a forum where questions can be asked, but the rules of engagement are: **this is my hobby, I make it available because it helps others**. Don't expect immediate answers, make sure you've recreated the problem in a simple sketch that you can send to me. Please consider making at least a one time donation using the sponsor link above before using the forum.
+
 * [TCC Libraries community discussion forum](https://www.thecoderscorner.com/jforum/)
 * I also monitor the Arduino forum [https://forum.arduino.cc/], Arduino related questions can be asked there too.
 
