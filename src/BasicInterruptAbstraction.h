@@ -1,6 +1,7 @@
-//
-// Created by dave on 23/12/2020.
-//
+/*
+ * Copyright (c) 2018 https://www.thecoderscorner.com (Dave Cherry)..
+ * This product is licensed under an Apache license, see the LICENSE file in the top-level directory.
+ */
 
 #ifndef TASKMANAGERIO_BASICINTERRUPTABSTRACTION_H
 #define TASKMANAGERIO_BASICINTERRUPTABSTRACTION_H
