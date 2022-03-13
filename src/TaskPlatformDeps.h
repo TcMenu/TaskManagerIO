@@ -16,7 +16,17 @@ class TimerTask;
 #endif
 
 // check if this is Arduino mbed or regular mbed.
-#if defined(ARDUINO_ARDUINO_NANO33BLE)
+// list of devices is pulled from https://github.com/arduino/ArduinoCore-mbed/blob/master/full.variables
+// set TMIOA_FORCE_ARDUINO_MBED to force IoAbstraction to use Arduino-mbed mode.
+#if defined(ARDUINO_NANO_RP2040_CONNECT) || \
+    defined(ARDUINO_ARDUINO_NANO33BLE) || \
+    defined(ARDUINO_RASPBERRY_PI_PICO) || \
+    defined(ARDUINO_PORTENTA_H7_M7) || \
+    defined(ARDUINO_PORTENTA_H7_M4) || \
+    defined(ARDUINO_EDGE_CONTROL) || \
+    defined(ARDUINO_NICLA) || \
+    defined(ARDUINO_NICLA_VISION) || \
+    defined(TMIOA_FORCE_ARDUINO_MBED)
 # define IOA_USE_ARDUINO
 # define ARDUINO_MBED_MODE
 # include "Arduino.h"
