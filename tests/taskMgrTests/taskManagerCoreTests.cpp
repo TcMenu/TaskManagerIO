@@ -139,17 +139,17 @@ testF(TimingHelpFixture, scheduleFixedRateTestCase) {
     dumpTasks();
 
     uint32_t timeStartYield = millis();
-    taskManager.yieldForMicros(20000);
+    taskManager.yieldForMicros(secondsToMillis(22));
     uint32_t timeTaken = millis() - timeStartYield;
 
     dumpTasks();
 
     // make sure the yield timings were in range.
-    assertLess(timeTaken, (uint32_t) 22);
-    assertMoreOrEqual(timeTaken, (uint32_t) 19);
+    assertLess(timeTaken, (uint32_t) 25);
+    assertMoreOrEqual(timeTaken, (uint32_t) 20);
 
     // now make sure that we got in the right ball park of calls.
-    assertMore(count, 2);
+    assertMore(count, 1);
     assertMore(count2, 150);
 }
 
