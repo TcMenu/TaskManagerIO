@@ -127,6 +127,7 @@ void TimerTask::clear() {
 }
 
 void TimerTask::processEvent() {
+    RunningState runningState(this);
     myTimingSchedule = eventRef->timeOfNextCheck();
     if(eventRef->isTriggered()) {
         eventRef->setTriggered(false);
@@ -147,7 +148,7 @@ bool TimerTask::isRepeating() const {
     }
 }
 
-void BaseEvent::markTriggeredAndNotify() {
-    setTriggered(true);
+ISR_ATTR void BaseEvent::markTriggeredAndNotify() {
+    triggered = true;
     taskMgrAssociation->triggerEvents();
 }

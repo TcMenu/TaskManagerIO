@@ -186,6 +186,21 @@ void TaskManager::yieldForMicros(uint32_t microsToWait) {
 	tm_internal::atomicWritePtr(&runningTask, prevTask);
 }
 
+class TaskExecutionRecorder {
+private:
+    TimerTask* prevTask;
+    TaskManager* taskMgr;
+public:
+    TaskExecutionRecorder(TaskManager* tm, TimerTask* task) : taskMgr(tm) {
+        prevTask = tm->getRunningTask();
+        tm_internal::atomicWritePtr(&tm->runningTask, task);
+    }
+
+    ~TaskExecutionRecorder() {
+        tm_internal::atomicWritePtr(&taskMgr->runningTask, prevTask);
+    }
+};
+
 void TaskManager::dealWithInterrupt() {
     interrupted = false;
     if(interruptCallback != nullptr) interruptCallback(lastInterruptTrigger);
@@ -194,16 +209,20 @@ void TaskManager::dealWithInterrupt() {
     for(taskid_t i=0; i<lastSlot; i++) {
         auto* task = getTask(i);
         if(task->isInUse() && task->isEvent()) {
-            tm_internal::atomicWritePtr(&runningTask, task);
-            task->processEvent();
-            tm_internal::atomicWritePtr(&runningTask, nullptr);
-            removeFromQueue(task);
-            if(task->isRepeating()) {
-                putItemIntoQueue(task);
+            if (!task->isRunning()) {
+                TaskExecutionRecorder taskExecutionRecorder(this, task);
+                task->processEvent();
+                removeFromQueue(task);
+                if (task->isRepeating()) {
+                    putItemIntoQueue(task);
+                }
+                else {
+                    task->clear();
+                    tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
+                }
             }
             else {
-                task->clear();
-                tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
+                interrupted = true; // we have to assume we still need to process this event next time around.
             }
         }
     }
@@ -223,9 +242,8 @@ void TaskManager::runLoop() {
             // by here we know that the task is in use. If it's in use nothing will touch it until it's marked as
             // available. We can do this part without a lock, knowing that we are the only thing that will touch
             // the task. We further know that all non-immutable fields on TimerTask are volatile.
-            tm_internal::atomicWritePtr(&runningTask, tm);
+            TaskExecutionRecorder executionRecorder(this, tm);
             tm->execute();
-            tm_internal::atomicWritePtr(&runningTask, nullptr);
             removeFromQueue(tm);
             if (tm->isRepeating()) {
                 putItemIntoQueue(tm);

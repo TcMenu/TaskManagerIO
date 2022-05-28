@@ -71,6 +71,8 @@ public:
     virtual void attachInterrupt(pintype_t pin, RawIntHandler fn, uint8_t mode) = 0;
 };
 
+class TaskExecutionRecorder;
+
 /**
  * TaskManager is a lightweight cooperative co-routine implementation for Arduino, it works by scheduling tasks to be
  * done either immediately, or at a future point in time. It is quite efficient at scheduling tasks as internally tasks
@@ -187,7 +189,7 @@ public:
      * Generally used by the BaseEvent class in the markTriggeredAndNotify to indicate that at least
      * one event has now triggered and needs to be evaluated.
      */
-    void triggerEvents() {
+    ISR_ATTR void triggerEvents() {
         lastInterruptTrigger = 0xff; // 0xff is the shorthand for event trigger basically.
         interrupted = true;
     }
@@ -299,6 +301,7 @@ public:
      */
     TimerTask* getRunningTask() { return runningTask; }
 
+    friend class TaskExecutionRecorder;
 private:
     /**
      * Finds and allocates the next free task, once this returns a task will either have been allocated, making task
