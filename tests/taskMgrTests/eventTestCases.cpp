@@ -94,6 +94,9 @@ public:
 
     void exec() override {
         execCalls++;
+        markTriggeredAndNotify();
+        taskManager.yieldForMicros(500);
+        setTriggered(false);
         taskManager.execute([] {
             taskWithinEvent = true;
         });
