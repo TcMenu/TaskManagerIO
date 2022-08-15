@@ -114,18 +114,7 @@ There is a forum where questions can be asked, but the rules of engagement are: 
 
 ### Known working and supported boards:
 
-| CPU / OS   | Boards using CPU  | Status    | Threading  |
-| ---------- | ----------------- | --------- | ---------- |
-| ARM mbed   | STM32, nRF.       | Supported | CAS locking|
-| ESP8266    | Node MCU, Huzzah  | Supported | Interrupt  |
-| ESP32      | Wifi32, Huzzah32  | Supported | CAS locking|
-| SAMD ARM   | MKR, IoT, Zero.   | Supported | Interrupt  |
-| Stm32Duino | STM32F4 boards    | Supported | Interrupt  |
-| AVR        | Uno, Mega Mighty  | Supported | Interrupt  |
-| nRF52840   | Nano BLE          | Supported | CAS locking|
-| Particle   | Photon            | Supported | Interrupt  |
-
-Note: if you are using a bare-metal mbed build (non-RTOS) on platformIO, for the moment please add an extra build flag: `PIO_NEEDS_RTOS_WORKAROUND` as a short term fix while a long term solution is determined. See issue [#17](https://github.com/davetcc/TaskManagerIO/issues/17).
+https://www.thecoderscorner.com/products/arduino-libraries/
 
 Many thanks to contributors for helping us to confirm that this software runs on a wide range of hardware.
 
