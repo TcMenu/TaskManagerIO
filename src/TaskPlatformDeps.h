@@ -371,12 +371,6 @@ namespace tm_internal {
 #endif // _has_include
 #endif // GCC>=5 and !TM_ALLOW_CAPTURED_LAMBDA
 
-#ifdef ESP32
-#define RawIntHandler std::function<void(void)>
-#elif ARDUINO_ARCH_STM32
-#define RawIntHandler callback_function_t
-#else
 typedef void (*RawIntHandler)();
-#endif // RAW INT checks
 
 #endif //TASKMANGERIO_PLATFORMDETERMINATION_H
