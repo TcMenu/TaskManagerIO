@@ -41,6 +41,11 @@ uint32_t micros();
 #endif // IOA_USE_MBED
 
 /**
+ * the definition of an interrupt handler function, to be called back when an interrupt occurs.
+ */
+typedef void (*RawIntHandler)();
+
+/**
  * Definition of a function to be called back when an interrupt is detected, marshalled by task manager into a task.
  * The pin that caused the interrupt is passed in the parameter on a best efforts basis.
  * @param pin the pin on which the interrupt occurred (best efforts)

@@ -371,6 +371,4 @@ namespace tm_internal {
 #endif // _has_include
 #endif // GCC>=5 and !TM_ALLOW_CAPTURED_LAMBDA
 
-typedef void (*RawIntHandler)();
-
 #endif //TASKMANGERIO_PLATFORMDETERMINATION_H
