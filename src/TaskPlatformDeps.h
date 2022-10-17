@@ -9,7 +9,12 @@
 
 class TimerTask;
 
-#if defined(__MBED__) || defined(ARDUINO_ARDUINO_NANO33BLE)
+// when not on mbed, we need to load Arduino.h to get the right defines for some boards.
+#ifndef __MBED__
+#include <Arduino.h>
+#endif
+
+#if defined(__MBED__) && !defined(ARDUINO_PICO_REVISION)
 
 #if defined(TM_ENABLE_CAPTURED_LAMBDAS)
 #define TM_ALLOW_CAPTURED_LAMBDA
@@ -95,7 +100,7 @@ namespace tm_internal {
         *pPtr = newValue;
     }
 }
-#elif defined(ESP8266) || defined(ESP32)
+#elif defined(ESP8266) || defined(ESP32) || defined(ARDUINO_PICO_REVISION)
 #include "Arduino.h"
 typedef uint8_t pintype_t;
 # define IOA_USE_ARDUINO
@@ -103,7 +108,7 @@ typedef uint8_t pintype_t;
 # define TM_ALLOW_CAPTURED_LAMBDA
 #endif
 
-#if defined(ESP8266)
+#if defined(ESP8266) || defined(ARDUINO_PICO_REVISION)
 #include <atomic>
 namespace tm_internal {
 
