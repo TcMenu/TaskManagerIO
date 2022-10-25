@@ -10,6 +10,7 @@
 #include <TaskManagerIO.h>
 #include <TmLongSchedule.h>
 #include <Wire.h>
+#include <IoLogging.h>
 
 //
 // Here we create an OO task (a task that is actually a class instance). In this case the exec() method will be
@@ -35,6 +36,7 @@ public:
 
 // Forward references
 void dailyScheduleFn();
+void fiveMinsOnceFn();
 
 //
 // Here we create two schedules to be registered with task manager later. One will fire every days and one will fire
@@ -43,28 +45,29 @@ void dailyScheduleFn();
 //
 TmLongSchedule hourAndHalfSchedule(makeHourSchedule(1, 30), &myTaskExec);
 TmLongSchedule onceADaySchedule(makeDaySchedule(1), dailyScheduleFn);
+TmLongSchedule fiveMinsOnceSchedule(makeHourSchedule(0, 5), fiveMinsOnceFn, true);
 
 void setup() {
-    Serial.begin(115200);
+    //Serial.begin(115200);
+    Serial1.begin(115200);
 
-    Serial.println("Started long schedule example");
+    serdebugF("Started long schedule example");
 
     // First two long schedules are global variables.
     // IMPORTANT NOTE: If you use references to a variable like this THEY MUST BE GLOBAL
     taskManager.registerEvent(&hourAndHalfSchedule);
     taskManager.registerEvent(&onceADaySchedule);
+    taskManager.registerEvent(&fiveMinsOnceSchedule);
 
     // this shows how to create a long schedule event using the new operator, make sure the second parameter is true
     // as this will delete the event when it completes.
     taskManager.registerEvent(new TmLongSchedule(makeHourSchedule(0, 15), [] {
-        Serial.print(millis());
-        Serial.println(": Fifteen minutes passed");
+        serdebugF(": Fifteen minutes passed");
     }), true);
 
     // lastly we show the regular event creation method, this task is enabled and disabled by the OO task.
     auto taskId = taskManager.scheduleFixedRate(120, [] {
-        Serial.print(millis());
-        Serial.println(": Two minutes");
+        serdebugF(": Two minutes");
     }, TIME_SECONDS);
 
     myTaskExec.setTaskToSuspend(taskId);
@@ -75,6 +78,9 @@ void loop() {
 }
 
 void dailyScheduleFn() {
-    Serial.print(millis());
-    Serial.println(": Daily schedule");
+    serdebugF("Daily schedule");
+}
+
+void fiveMinsOnceFn() {
+    serdebugF("Five mins once, should not occur again");
 }

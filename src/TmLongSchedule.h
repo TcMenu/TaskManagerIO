@@ -18,18 +18,19 @@ private:
     const TimerFn fnCallback;
     Executable *const theExecutable;
     uint32_t lastScheduleTime;
+    bool oneTime;
 public:
     /** Create a schedule that will call back a TimerFn functional callback.
      * @param milliSchedule the schedule to call back on
      * @param callee the functional callback
      */
-    TmLongSchedule(uint32_t milliSchedule, TimerFn callee);
+    TmLongSchedule(uint32_t milliSchedule, TimerFn callee, bool oneTime = false);
     /**
      * Create schedule that will call the exec() method on an Executable
      * @param milliSchedule the schedule to call back on
      * @param callee the object extending from Executable
      */
-    TmLongSchedule(uint32_t milliSchedule, Executable* callee);
+    TmLongSchedule(uint32_t milliSchedule, Executable* callee, bool oneTime = false);
 
     void exec() override;
 

@@ -17,11 +17,11 @@ uint32_t makeDaySchedule(int days, int hours) {
     return (days * 24UL * HOURS_TO_MILLIS) + (hours * MINUTES_TO_MILLIS);
 }
 
-TmLongSchedule::TmLongSchedule(uint32_t milliScheduleNext, Executable* toExecute) : milliSchedule(milliScheduleNext),
-        fnCallback(nullptr), theExecutable(toExecute), lastScheduleTime(0) { }
+TmLongSchedule::TmLongSchedule(uint32_t milliScheduleNext, Executable* toExecute, bool oneTime) : milliSchedule(milliScheduleNext),
+        fnCallback(nullptr), theExecutable(toExecute), lastScheduleTime(0), oneTime(oneTime) { }
 
-TmLongSchedule::TmLongSchedule(uint32_t milliScheduleNext, TimerFn toExecute) : milliSchedule(milliScheduleNext),
-        fnCallback(toExecute), theExecutable(nullptr), lastScheduleTime(0) { }
+TmLongSchedule::TmLongSchedule(uint32_t milliScheduleNext, TimerFn toExecute, bool oneTime) : milliSchedule(milliScheduleNext),
+        fnCallback(toExecute), theExecutable(nullptr), lastScheduleTime(0), oneTime(oneTime) { }
 
 void TmLongSchedule::exec() {
     lastScheduleTime = millis();
@@ -36,6 +36,7 @@ void TmLongSchedule::exec() {
         fnCallback();
     }
 
+    setCompleted(oneTime);
 }
 
 uint32_t TmLongSchedule::timeOfNextCheck() {
