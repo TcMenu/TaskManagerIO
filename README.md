@@ -83,7 +83,8 @@ To schedule tasks that have an interval of longer than an hour, use the long sch
 
 First create a long schedule either globally or using the new operator:
 
-    TmLongSchedule hourAndHalfSchedule(makeHourSchedule(1, 30), &myTaskExec);
+    TmLongSchedule hourAndHalfSchedule(makeHourSchedule(1, 30), &myTaskExec); // runs until cancelled
+    TmLongSchedule hourAndHalfSchedule(makeHourSchedule(1, 30), &myTaskExec, runOnlyOnce);
 
 Then add it to task manager during setup or as needed:
 
