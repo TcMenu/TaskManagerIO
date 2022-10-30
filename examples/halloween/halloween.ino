@@ -8,6 +8,17 @@
  */
 #include <TaskManagerIO.h>
 
+// here we define 4 PWM capable pins to connect the LEDs to, the LED controllers will be defined further down.
+const int blueLedPin = 6;
+const int redLedPin = 5;
+const int yellowLedPin = 10;
+const int greenLedPin = 11;
+
+//
+// We use instances of a class extending executable, this allows us to store state for each LED and be called by task
+// manager on the schedule we define, it will call back the exec() method. This holds the LED pin and if the pin is
+// inverted, IE if the connection is reversed and the LED is on when LOW.
+//
 class LedControlTask : public Executable {
 private:
     pintype_t pin;
@@ -32,18 +43,22 @@ public:
     }
 };
 
-LedControlTask blueLed(6);
-LedControlTask redLed(5);
-LedControlTask greenLed(11, true);
-LedControlTask yellowLed(10);
+// define the 4 LED controllers globally
+
+LedControlTask blueLed(blueLedPin);
+LedControlTask redLed(redLedPin);
+LedControlTask greenLed(greenLedPin, true);
+LedControlTask yellowLed(yellowLedPin);
 
 void setup() {
+    // when we initialise them, they start a schedule with task manager.
     blueLed.init();
     redLed.init();
     greenLed.init();
     yellowLed.init();
 }
 
+// as with all task manager based programs, you must call the runLoop method frequently.
 void loop() {
     taskManager.runLoop();
 }
