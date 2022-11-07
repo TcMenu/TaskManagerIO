@@ -1,16 +1,14 @@
 
 #include <Arduino.h>
-#include <AUnit.h>
+#include <testing/SimpleTest.h>
 #include <Wire.h>
 
-using namespace aunit;
+using namespace SimpleTest;
 
 void setup() {
     Serial.begin(115200);
     while (!Serial);
+    startTesting();
 }
 
-void loop() {
-    TestRunner::setTimeout(60);
-    TestRunner::run();
-}
+DEFAULT_TEST_RUNLOOP

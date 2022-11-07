@@ -1,10 +1,10 @@
 
-#include <AUnit.h>
+#include <testing/SimpleTest.h>
 #include <ExecWithParameter.h>
 #include "TaskManagerIO.h"
 #include "test_utils.h"
 
-using namespace aunit;
+using namespace SimpleTest;
 
 bool taskWithinEvent;
 
@@ -124,7 +124,7 @@ testF(TimingHelpFixture, testNotifyEventThatStartsAnotherTask) {
         externalEvent.markTriggeredAndNotify();
         taskManager.yieldForMicros(100);
         assertTrue(runScheduleUntilMatchOrTimeout([] { return taskWithinEvent; }));
-        assertEqual(i + 1, externalEvent.getExecCalls());
+        assertEquals(i + 1, externalEvent.getExecCalls());
     }
 
     // now we let the task complete and after one more cycle it should be removed by task manager.
@@ -137,7 +137,7 @@ testF(TimingHelpFixture, testNotifyEventThatStartsAnotherTask) {
     externalEvent.markTriggeredAndNotify();
     taskManager.yieldForMicros(200);
     assertFalse(externalEvent.wasNextCheckCalled());
-    assertEqual(0, externalEvent.getExecCalls());
+    assertEquals(0, externalEvent.getExecCalls());
 
     // it should not be in task manager any longer.
     assertFalse(taskManager.getTask(taskId)->isEvent());

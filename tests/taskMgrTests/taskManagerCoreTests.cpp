@@ -1,10 +1,10 @@
 
-#include <AUnit.h>
+#include <testing/SimpleTest.h>
 #include <ExecWithParameter.h>
 #include "TaskManagerIO.h"
 #include "test_utils.h"
 
-using namespace aunit;
+using namespace SimpleTest;
 
 void dumpTasks() {
     Serial.println("Dumping the task queue contents");
@@ -57,10 +57,10 @@ public:
 TestingExec exec;
 
 testF(TimingHelpFixture, testRunningUsingExecutorClass) {
-    taskManager.scheduleFixedRate(10, &exec);
+    taskManager.scheduleFixedRate(10, &::exec);
     taskManager.scheduleOnce(250, recordingJob);
     assertThatTaskRunsOnTime(250000L, MILLIS_ALLOWANCE);
-    assertMore(exec.noOfTimesRun, 10);
+    assertMoreThan(10, ::exec.noOfTimesRun);
 }
 
 testF(TimingHelpFixture, schedulingTaskOnceInMicroseconds) {
@@ -96,7 +96,7 @@ testF(TimingHelpFixture, enableAndDisableSupport) {
     static int myTaskCounter = 0;
     auto myTaskId = taskManager.scheduleFixedRate(1, [] { myTaskCounter++; }, TIME_MILLIS);
     taskManager.yieldForMicros(20000);
-    assertNotEqual(0, myTaskCounter);
+    assertNotEquals(0, myTaskCounter);
 
     // "turn off" the task
     taskManager.setTaskEnabled(myTaskId, false);
@@ -107,32 +107,32 @@ testF(TimingHelpFixture, enableAndDisableSupport) {
 
     // now run the task for some time, it should never get scheduled.
     taskManager.yieldForMicros(20000);
-    assertEqual(myTaskCounter, oldTaskCount);
+    assertEquals(myTaskCounter, oldTaskCount);
 
     // "turn on" the task and see if it increases again
     taskManager.setTaskEnabled(myTaskId, true);
     taskManager.yieldForMicros(20000);
-    assertNotEqual(myTaskCounter, oldTaskCount);
+    assertNotEquals(myTaskCounter, oldTaskCount);
 
 }
 
 testF(TimingHelpFixture, scheduleFixedRateTestCase) {
-    assertEqual(taskManager.getFirstTask(), NULL);
+    assertEquals(taskManager.getFirstTask(), NULL);
 
     auto taskId1 = taskManager.scheduleFixedRate(10, recordingJob, TIME_MILLIS);
     auto taskId2 = taskManager.scheduleFixedRate(100, recordingJob2, TIME_MICROS);
 
     // now check the task registration in detail.
-    assertNotEqual(taskId1, TASKMGR_INVALIDID);
+    assertNotEquals(taskId1, TASKMGR_INVALIDID);
     TimerTask* task = taskManager.getFirstTask();
-    assertNotEqual(task, NULL);
+    assertNotEquals(task, NULL);
     assertFalse(task->isMillisSchedule());
     assertTrue(task->isMicrosSchedule());
 
     // now check the task registration in detail.
-    assertNotEqual(taskId2, TASKMGR_INVALIDID);
+    assertNotEquals(taskId2, TASKMGR_INVALIDID);
     task = task->getNext();
-    assertNotEqual(task, NULL);
+    assertNotEquals(task, NULL);
     assertTrue(task->isMillisSchedule());
     assertFalse(task->isMicrosSchedule());
 
@@ -145,26 +145,26 @@ testF(TimingHelpFixture, scheduleFixedRateTestCase) {
     dumpTasks();
 
     // make sure the yield timings were in range.
-    assertLess(timeTaken, (uint32_t) 25);
-    assertMoreOrEqual(timeTaken, (uint32_t) 20);
+    assertLessThan((uint32_t) 25, timeTaken);
+    assertMoreThan((uint32_t) 19, timeTaken);
 
     // now make sure that we got in the right ball park of calls.
-    assertMore(count, 1);
-    assertMore(count2, 150);
+    assertMoreThan(1, count);
+    assertMoreThan(150, count2);
 }
 
 testF(TimingHelpFixture, cancellingAJobAfterCreation) {
-    assertEqual(taskManager.getFirstTask(), NULL);
+    assertEquals(taskManager.getFirstTask(), nullptr);
 
     auto taskId = taskManager.scheduleFixedRate(10, recordingJob, TIME_MILLIS);
 
     // now check the task registration in detail.
-    assertNotEqual(taskId, TASKMGR_INVALIDID);
+    assertNotEquals(taskId, TASKMGR_INVALIDID);
     TimerTask* task = taskManager.getFirstTask();
-    assertNotEqual(task, NULL);
+    assertNotEquals(task, NULL);
     assertTrue(task->isMillisSchedule());
     assertFalse(task->isMicrosSchedule());
-    assertMore(task->microsFromNow(), 8000UL);
+    assertMoreThan(8000UL, task->microsFromNow());
 
     assertThatTaskRunsOnTime(10000, MILLIS_ALLOWANCE);
 
@@ -174,5 +174,5 @@ testF(TimingHelpFixture, cancellingAJobAfterCreation) {
     taskManager.yieldForMicros(100); // needs to run the cancellation task.
     assertTasksSpacesTaken(0);
 
-    assertEqual(taskManager.getFirstTask(), NULL);
+    assertEquals(taskManager.getFirstTask(), NULL);
 }

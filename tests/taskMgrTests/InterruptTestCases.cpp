@@ -1,9 +1,9 @@
 
-#include <AUnit.h>
+#include <testing/SimpleTest.h>
 #include "TaskManagerIO.h"
 #include "test_utils.h"
 
-using namespace aunit;
+using namespace SimpleTest;
 
 class MockedInterruptAbstraction : public InterruptAbstraction {
 private:
@@ -54,8 +54,8 @@ testF(TimingHelpFixture, interruptSupportMarshalling) {
     taskManager.addInterrupt(&interruptAbs, 2, CHANGE);
 
     // make sure the interrupt is properly registered.
-    assertEqual(pintype_t(2), interruptAbs.getInterruptPin());
-    assertEqual(CHANGE, interruptAbs.getTheMode());
+    assertEquals(pintype_t(2), interruptAbs.getInterruptPin());
+    assertEquals(CHANGE, interruptAbs.getTheMode());
     assertFalse(interruptAbs.isIntHandlerNull());
 
     // now pretend the interrupt took place.
@@ -65,5 +65,5 @@ testF(TimingHelpFixture, interruptSupportMarshalling) {
     assertThatTaskRunsOnTime(0, 250);
 
     // and the pin should be 2
-    assertEqual(2, pinNo);
+    assertEquals(2, pinNo);
 }

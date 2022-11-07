@@ -1,10 +1,10 @@
 
-#include <AUnit.h>
+#include <testing/SimpleTest.h>
 #include <SimpleSpinLock.h>
 #include "TaskManagerIO.h"
 #include "test_utils.h"
 
-using namespace aunit;
+using namespace SimpleTest;
 
 SimpleSpinLock testLock;
 taskid_t runTaskId1;
@@ -24,7 +24,7 @@ test(testGettingRunningTaskAlwaysCorrect) {
     runCount1 = runCount2 = runCount3 = 0;
 
     taskManager.reset();
-    assertEqual(nullptr, taskManager.getRunningTask());
+    assertEquals(nullptr, taskManager.getRunningTask());
 
     serdebugF("Starting running task check");
 
@@ -48,12 +48,12 @@ test(testGettingRunningTaskAlwaysCorrect) {
     unsigned long then = millis();
     taskManager.yieldForMicros(millisToMicros(100));
     int diff = int(millis() - then);
-    assertMore(diff, 90);
+    assertMoreThan(90, diff);
 
     serdebugF("Finished running task check, asserting.");
 
     assertTrue(task1RunningPtrCheck);
     assertTrue(task2RunningPtrCheck);
-    assertMore(runCount1, 30);
-    assertMore(runCount2, 250);
+    assertMoreThan(30, runCount1);
+    assertMoreThan(250, runCount2);
 }

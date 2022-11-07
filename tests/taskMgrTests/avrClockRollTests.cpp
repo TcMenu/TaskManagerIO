@@ -1,11 +1,11 @@
 
 #ifdef __AVR__
 
-#include <AUnit.h>
+#include <testing/SimpleTest.h>
 #include <util/atomic.h>
 #include "TaskManagerIO.h"
 
-using namespace aunit;
+using namespace SimpleTest;
 
 // We can only reset the clock to a new value on AVR, this is very useful and allows us to ensure the
 // rollover cases work properly at least for milliseconds. As millisecond and microsecond logic are very
@@ -67,13 +67,13 @@ test(testClockRollover) {
     dumpTaskTiming();
 
     // the one second task should have executed exactly once.
-    assertEqual(avrCount1, 1);
-    assertMore(avrCount2, 1000);
+    assertEquals(1, avrCount1);
+    assertMoreThan(1000, avrCount2);
 
     // make sure millis has wrapped now.
     assertTrue(millis() < 10000UL);
 
-    // and make sure the microsecond job is still going..
+    // and make sure the microsecond job is still going.
     int avrCount2Then = avrCount2;
     taskManager.yieldForMicros(10000);
     assertTrue(avrCount2Then != avrCount2);

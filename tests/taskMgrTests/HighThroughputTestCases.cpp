@@ -1,9 +1,9 @@
 
-#include <AUnit.h>
+#include <testing/SimpleTest.h>
 #include <TaskManagerIO.h>
 #include "test_utils.h"
 
-using namespace aunit;
+using namespace SimpleTest;
 
 int counts[6];
 
@@ -41,7 +41,7 @@ void testCall5() {
 // schedules, this is the most important test to pass in the whole suite.
 //
 
-class HighThroughputFixture : public TestOnce {
+class HighThroughputFixture : public UnitTestExecutor {
 public:
     /**
      * This method checks that taskmanager tasks are in proper and stable order. And that only running tasks
@@ -103,12 +103,12 @@ testF(HighThroughputFixture, taskManagerHighThroughputTest) {
 
     Serial.print("Dumping threads"); Serial.println(taskManager.checkAvailableSlots(slotData, sizeof slotData));
 
-    assertEqual(counts[5], 10); 	// should be 10 runs as it's manually repeating
-    assertMore(counts[1], 140);		// should be at least 140 runs, scheduled every 100 millis,
-    assertMore(counts[3], 14);		// should be at least 14 runs, as this test lasts about 20 seconds.
-    assertMore(counts[0], 1400);	// should be at least 1400 runs it's scheduled every 10 millis
-    assertEqual(counts[4], 1); 		// should have been triggered once
-    assertNotEqual(counts[2], 0); 	// meaningless to count micros calls. check it happened
+    assertEquals(10, counts[5]); 	// should be 10 runs as it's manually repeating
+    assertMoreThan(140, counts[1]);		// should be at least 140 runs, scheduled every 100 millis,
+    assertMoreThan(14, counts[3]);		// should be at least 14 runs, as this test lasts about 20 seconds.
+    assertMoreThan(1400, counts[0]);	// should be at least 1400 runs it's scheduled every 10 millis
+    assertEquals(1, counts[4]); 		// should have been triggered once
+    assertNotEquals(0, counts[2]); 	// meaningless to count micros calls. check it happened
 }
 
 //
@@ -152,7 +152,7 @@ testF(HighThroughputFixture, testCancellingsTasksWithinAnotherTask) {
 
     // the cancelled job should have run at least once before cancellation
     // and then must have been cancelled. Tasks should be in order
-    assertNotEqual(0, counts[0]);
+    assertNotEquals(0, counts[0]);
     assertTrue(taskCancelled);
 
     count = 500;
@@ -170,7 +170,7 @@ testF(HighThroughputFixture, testCancellingsTasksWithinAnotherTask) {
         Serial.print("Dumping threads"); Serial.println(taskManager.checkAvailableSlots(slotData, sizeof slotData));
     }
 
-    assertNotEqual(counts[1], storedCount1);
-    assertNotEqual(counts[2], storedCount1);
+    assertNotEquals(counts[1], storedCount1);
+    assertNotEquals(counts[2], storedCount1);
 }
 

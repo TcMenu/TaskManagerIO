@@ -2,7 +2,7 @@
 #ifndef TASKMANGERIO_TEST_UTILS_H
 #define TASKMANGERIO_TEST_UTILS_H
 
-#include <AUnit.h>
+#include <testing/SimpleTest.h>
 #include <IoLogging.h>
 
 void dumpTasks();
@@ -19,7 +19,7 @@ extern int count;
 extern int count2;
 extern uint8_t pinNo;
 
-using namespace aunit;
+using namespace SimpleTest;
 
 class EnsureExecutionWithin {
 private:
@@ -41,7 +41,7 @@ public:
     }
 };
 
-class TimingHelpFixture : public TestOnce {
+class TimingHelpFixture : public SimpleTest::UnitTestExecutor {
 protected:
     void setup() override {
         taskManager.reset();
@@ -72,8 +72,8 @@ protected:
         // check that it has been executed within the allowable window.
         unsigned long minRange = (minExpected < allowanceOver) ? 0 : (minExpected - allowanceOver);
         unsigned long maxRange = minExpected + allowanceOver;
-        assertMoreOrEqual((microsExecuted - microsStarted), minRange);
-        assertLess((microsExecuted - microsStarted), maxRange);
+        assertMoreThan(minRange, (microsExecuted - microsStarted));
+        assertLessThan(maxRange, (microsExecuted - microsStarted));
     }
 
     void assertThatSecondJobRan(unsigned long minExpected, unsigned long allowanceOver) {
@@ -90,8 +90,8 @@ protected:
         assertTrue(scheduled2ndJob);
         unsigned long minRange = (minExpected < allowanceOver) ? 0 : (minExpected - allowanceOver);
         unsigned long maxRange = minExpected + allowanceOver;
-        assertMoreOrEqual((microsExecuted2ndJob - microsStarted), minRange);
-        assertLess((microsExecuted2ndJob - microsStarted), maxRange);
+        assertMoreThan(minRange, (microsExecuted2ndJob - microsStarted));
+        assertLessThan(maxRange, (microsExecuted2ndJob - microsStarted));
     }
 
     void assertTasksSpacesTaken(int taken) {
@@ -103,7 +103,7 @@ protected:
             ++taskData;
         }
         Serial.print("Tasks free "); Serial.println(count);
-        assertEqual(taken, count);
+        assertEquals(taken, count);
     }
 };
 
