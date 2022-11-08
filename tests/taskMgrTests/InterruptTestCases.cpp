@@ -40,7 +40,7 @@ public:
     }
 };
 
-void intHandler(uint8_t pin) {
+void intHandler(pinid_t pin) {
     scheduled = true;
     microsExecuted = micros();
     count++;
