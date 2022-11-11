@@ -15,7 +15,7 @@ extern bool scheduled2ndJob;
 extern unsigned long microsStarted;
 extern unsigned long microsExecuted;
 extern unsigned long microsExecuted2ndJob;
-extern int count;
+extern int count1;
 extern int count2;
 extern uint8_t pinNo;
 
@@ -48,7 +48,7 @@ protected:
         scheduled = scheduled2ndJob = false;
         microsExecuted = microsExecuted2ndJob = 0;
         microsStarted = micros();
-        count = count2 = 0;
+        count1 = count2 = 0;
     }
 
     void assertThatTaskRunsOnTime(uint32_t minExpected, uint32_t allowanceOver) {
@@ -63,11 +63,9 @@ protected:
         assertTrue(scheduled);
 
         // print information to help with diagnostics.
-        Serial.print("Scheduled: "); Serial.print(microsStarted);
-        Serial.print(" ExecAt: "); Serial.print(microsExecuted);
+        serdebugF4("Scheduled: ", microsStarted, " exec:", microsExecuted);
         unsigned long howLong = microsExecuted - microsStarted;
-        Serial.print(" difference "); Serial.print(howLong);
-        Serial.print(" - expected "); Serial.println(minExpected);
+        serdebugF4(" difference ", howLong, "  expected:", minExpected);
 
         // check that it has been executed within the allowable window.
         unsigned long minRange = (minExpected < allowanceOver) ? 0 : (minExpected - allowanceOver);
@@ -81,11 +79,9 @@ protected:
         // have been run first (ie the shorter task)
 
         // print information to help with diagnostics.
-        Serial.print("Scheduled: "); Serial.print(microsStarted);
-        Serial.print(" ExecAt: "); Serial.print(microsExecuted2ndJob);
+        serdebugF4("Scheduled: ", microsStarted, " ExecAt: ", microsExecuted2ndJob);
         long howLong = microsExecuted2ndJob - microsStarted;
-        Serial.print(" difference "); Serial.print(howLong);
-        Serial.print(" - expected "); Serial.println(minExpected);
+        serdebugF4(" difference ", howLong, " - expected ", minExpected);
 
         assertTrue(scheduled2ndJob);
         unsigned long minRange = (minExpected < allowanceOver) ? 0 : (minExpected - allowanceOver);
@@ -96,14 +92,14 @@ protected:
 
     void assertTasksSpacesTaken(int taken) {
         char sz[32];
-        int count = 0;
+        int cnt = 0;
         char* taskData = taskManager.checkAvailableSlots(sz, sizeof sz);
         while(*taskData) {
-            if(*taskData != 'F') count++;
+            if(*taskData != 'F') cnt++;
             ++taskData;
         }
-        Serial.print("Tasks free "); Serial.println(count);
-        assertEquals(taken, count);
+        serdebugF2("Tasks free ", cnt);
+        assertEquals(taken, cnt);
     }
 };
 

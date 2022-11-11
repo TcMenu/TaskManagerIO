@@ -3,6 +3,8 @@
 
 using namespace SimpleTest;
 
+IOLOG_MBED_PORT_IF_NEEDED(USBTX, USBRX)
+
 HardwareTimer* myTimer;
 int taskExec = 0;
 
@@ -34,8 +36,7 @@ void timerHasChanged() {
 }
 
 void setup() {
-    Serial.begin(115200);
-    while (!Serial);
+    IOLOG_START_SERIAL
     startTesting();
 
 #if defined(TIM1)
@@ -44,7 +45,6 @@ void setup() {
     TIM_TypeDef *Instance = TIM2;
 #endif
 
-    // Instantiate HardwareTimer object. Thanks to 'new' instanciation, HardwareTimer is not destructed when setup() function is finished.
     myTimer = new HardwareTimer(Instance);
     pinMode(LED_BUILTIN, OUTPUT);
     myTimer->setOverflow(250, HERTZ_FORMAT);

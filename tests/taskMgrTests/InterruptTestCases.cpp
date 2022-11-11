@@ -43,7 +43,7 @@ public:
 void intHandler(pinid_t pin) {
     scheduled = true;
     microsExecuted = micros();
-    count++;
+    count1++;
     pinNo = pin;
 }
 

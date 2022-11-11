@@ -59,8 +59,7 @@ public:
             // we then compare it in order, obviously millis tick slower than micros
             if(currentTaskMicros < prevTaskMicros && (prevTaskMicros - currentTaskMicros) > 1000) {
                 inOrder = false;
-                Serial.print("Failed prev "); Serial.print(prevTaskMicros);
-                Serial.print(", current ");Serial.println(currentTaskMicros);
+                serdebugF4("Failed prev ", prevTaskMicros, ", current ", currentTaskMicros);
             }
 
             // get the next item and store this micros for next compare.
@@ -85,7 +84,7 @@ testF(HighThroughputFixture, taskManagerHighThroughputTest) {
     char slotData[32];
     clearCounts();
 
-    Serial.print("Dumping threads"); Serial.println(taskManager.checkAvailableSlots(slotData, sizeof slotData));
+    serdebugF2("Dumping threads", taskManager.checkAvailableSlots(slotData, sizeof slotData));
 
     taskManager.scheduleFixedRate(10, testCall1);
     taskManager.scheduleFixedRate(100, testCall2);
@@ -93,7 +92,7 @@ testF(HighThroughputFixture, taskManagerHighThroughputTest) {
     taskManager.scheduleOnce(1, testCall4, TIME_SECONDS);
     taskManager.scheduleOnce(10, testCall5, TIME_SECONDS);
 
-    Serial.print("Dumping threads"); Serial.println(taskManager.checkAvailableSlots(slotData, sizeof slotData));
+    serdebugF2("Dumping threads", taskManager.checkAvailableSlots(slotData, sizeof slotData));
 
     unsigned long start = millis();
     while(counts[5] < 10 && (millis() - start) < 25000) {
@@ -101,7 +100,7 @@ testF(HighThroughputFixture, taskManagerHighThroughputTest) {
         assertTasksAreInOrder();
     }
 
-    Serial.print("Dumping threads"); Serial.println(taskManager.checkAvailableSlots(slotData, sizeof slotData));
+    serdebugF2("Dumping threads", taskManager.checkAvailableSlots(slotData, sizeof slotData));
 
     assertEquals(10, counts[5]); 	// should be 10 runs as it's manually repeating
     assertMoreThan(140, counts[1]);		// should be at least 140 runs, scheduled every 100 millis,
@@ -167,7 +166,7 @@ testF(HighThroughputFixture, testCancellingsTasksWithinAnotherTask) {
     // in this case we dump the queue, something is wrong.
     if (counts[1] == storedCount1) {
         dumpTasks();
-        Serial.print("Dumping threads"); Serial.println(taskManager.checkAvailableSlots(slotData, sizeof slotData));
+        serdebugF2("Dumping threads", taskManager.checkAvailableSlots(slotData, sizeof slotData));
     }
 
     assertNotEquals(counts[1], storedCount1);

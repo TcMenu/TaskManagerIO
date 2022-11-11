@@ -7,15 +7,13 @@
 using namespace SimpleTest;
 
 void dumpTasks() {
-    Serial.println("Dumping the task queue contents");
+    serdebugF("Dumping the task queue contents");
     TimerTask* task = taskManager.getFirstTask();
     while(task) {
-        Serial.print(" - Task schedule "); Serial.print(task->microsFromNow());
-        Serial.print(task->isRepeating() ? " Repeating ":" Once ");
-        Serial.print(task->isMicrosSchedule() ? " Micros " : " Millis ");
-        Serial.println(task->isInUse() ? " InUse":" Free");
+        serdebugF4(" - Task schedule ", task->microsFromNow(), task->isRepeating() ? " Repeating ":" Once ", (task->isMicrosSchedule() ? " Micros " : " Millis "));
+        serdebug(task->isInUse() ? " InUse":" Free");
         if(task->getNext() == task) {
-            Serial.println("!!!Infinite loop found!!!");
+            serdebugF("!!!Infinite loop found!!!");
         }
         task = task->getNext();
     }
@@ -25,12 +23,12 @@ void dumpTasks() {
 bool scheduled = false;
 bool scheduled2ndJob = false;
 unsigned long microsStarted = 0, microsExecuted = 0, microsExecuted2ndJob = 0;
-int count = 0, count2 = 0;
+int count1 = 0, count2 = 0;
 uint8_t pinNo = 0;
 
 void recordingJob() {
     microsExecuted = micros();
-    count++;
+    count1++;
     scheduled = true;
 }
 
@@ -149,7 +147,7 @@ testF(TimingHelpFixture, scheduleFixedRateTestCase) {
     assertMoreThan((uint32_t) 19, timeTaken);
 
     // now make sure that we got in the right ball park of calls.
-    assertMoreThan(1, count);
+    assertMoreThan(1, count1);
     assertMoreThan(150, count2);
 }
 
@@ -161,7 +159,7 @@ testF(TimingHelpFixture, cancellingAJobAfterCreation) {
     // now check the task registration in detail.
     assertNotEquals(taskId, TASKMGR_INVALIDID);
     TimerTask* task = taskManager.getFirstTask();
-    assertNotEquals(task, NULL);
+    assertNotEquals(task, nullptr);
     assertTrue(task->isMillisSchedule());
     assertFalse(task->isMicrosSchedule());
     assertMoreThan(8000UL, task->microsFromNow());

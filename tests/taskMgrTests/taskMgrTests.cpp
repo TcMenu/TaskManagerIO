@@ -1,13 +1,13 @@
 
-#include <Arduino.h>
+#include <IoAbstraction.h>
 #include <testing/SimpleTest.h>
-#include <Wire.h>
 
 using namespace SimpleTest;
 
+IOLOG_MBED_PORT_IF_NEEDED(USBTX, USBRX)
+
 void setup() {
-    Serial.begin(115200);
-    while (!Serial);
+    IOLOG_START_SERIAL
     startTesting();
 }
 
