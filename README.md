@@ -108,7 +108,7 @@ Arduino Only - If you want to use the legacy interrupt marshalling support inste
 * [TaskManagerIO documentation pages](https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/)
 * [TaskManagerIO reference documentation](https://www.thecoderscorner.com/ref-docs/taskmanagerio/html)
 
-I tend to monitor the discussions on this repository and also Arduino forum, the rules of engagement are: **this is my hobby, I make it available because it helps others**. Don't expect immediate answers, make sure you've recreated the problem in a simple sketch that you can send to me. Please do consider making at least a one time donation if helpful.
+I tend to monitor the discussions on this repository and also Arduino forum (ensure you mention me `@davetcc` in the topic), the rules of engagement are: **this is my hobby, I make it available because it helps others**. Don't expect immediate answers, make sure you've recreated the problem in a simple sketch that you can send to me. Please do consider making at least a one time donation if helpful.
 
 * [TCC Libraries community discussion forum](https://www.thecoderscorner.com/jforum/)
 * I also monitor the Arduino forum [https://forum.arduino.cc/], Arduino related questions can be asked there too.
