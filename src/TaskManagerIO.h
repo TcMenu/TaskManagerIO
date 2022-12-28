@@ -17,16 +17,9 @@ enum InterruptMode;
 /**
  * @file TaskManagerIO.h
  *
- * Task manager is a simple co-routine style implementation for Arduino which supports scheduling work to be done
+ * @brief Task manager is a simple co-routine style implementation for Arduino which supports scheduling work to be done
  * at a given time, repeating tasks, interrupt marshalling and events. It is generally thread safe such that code
  * outside of task manager can add, remove and manage tasks even while task manager is running.
- *
- * Note that you should never add tasks from a raw ISR, instead use task manager's marshalling of interrupts or
- * use an event that triggers on the interrupt occurring.
- *
- * The API for this class is compatible across Arduino, ESP and mbed. It is mainly thread safe on tested platforms.
- *
- * Both Commercial and Community support for task manager are available from http://www.thecoderscorner.com
  */
 
 #ifdef IOA_USE_MBED

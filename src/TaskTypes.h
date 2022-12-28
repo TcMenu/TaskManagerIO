@@ -8,8 +8,7 @@
 
 /**
  * @file TaskTypes.h
- *
- * This class represents the core tasks that are added to task manager, and the TimerTask object itself.
+ * @brief This class represents the core tasks that are added to task manager, and the TimerTask object itself.
  */
 
 #include "TaskPlatformDeps.h"

@@ -7,6 +7,11 @@
 #ifndef TASKMANAGERIO_PLATFORMDETERMINATION_H
 #define TASKMANAGERIO_PLATFORMDETERMINATION_H
 
+/**
+ * @file TaskPlatformDeps.h
+ * @brief provides the platform specific configuration for task manager
+ */
+
 class TimerTask;
 
 // You can add your own local definitions header file here, this enables you to adjust build flags in environments

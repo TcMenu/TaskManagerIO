@@ -11,8 +11,7 @@
 
 /**
  * @file TaskBlock.h
- *
- * An internal class definition that is the representation of a task
+ * @brief An internal class definition that is the representation of a task
  */
 
 /**

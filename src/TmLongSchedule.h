@@ -6,6 +6,11 @@
 #ifndef TASKMANGER_IO_TMLONGSCHEDULE_H
 #define TASKMANGER_IO_TMLONGSCHEDULE_H
 
+/**
+ * @file TmLongSchedule.h
+ * @brief long schedule support for task manager
+ */
+
 #include <TaskManagerIO.h>
 
 /**

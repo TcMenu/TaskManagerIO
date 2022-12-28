@@ -8,8 +8,7 @@
 
 /**
  * @file ExecWithParameter.h
- *
- * Provides convenience helper classes that allow for function callbacks with parameters
+ * @brief Provides convenience helper classes that allow for function callbacks with parameters
  */
 
 #include "TaskTypes.h"
