@@ -28,14 +28,14 @@ In the setup method, add an function callback that gets fired once in the future
 
 ```
 	// Create a task scheduled once every 100 miliis
-	taskid_t taskId = taskManager.scheduleOnce(100, [] {
+	taskid_t taskId = taskManager.schedule(repeatMillis(100), [] {
 		// some work to be done.
 	});
 	
 	// Create a task that's scheduled every second
-	taskid_t taskId = taskManager.scheduleFixedRate(1, [] {
+	taskid_t taskId = taskManager.schedule(repeatSeconds(1), [] {
 		// work to be done.
-	}, TIME_SECONDS);
+	});
 ```
 
 From 1.2 onwards: On ESP8266, ESP32, all mbed boards, and most 32 bit Arduino boards you can also *enable* argument capture in lambda expressions. By default, the feature is off because it is quite a heavy feature that many may never use.
@@ -46,9 +46,9 @@ An example of this usage follows:
 
 ```
     int capturedValue = 42;
-    taskManager.scheduleFixedRate(2, [capturedValue]() {
+    taskManager.schedule(repeatSeconds(2), [capturedValue]() {
         log("Execution with captured value = ", capturedValue);
-    }, TIME_SECONDS);
+    });
 
 ```
 
@@ -68,8 +68,17 @@ You can also create a class that extends from `Executable` and schedule that ins
     MyClassToSchedule myClass;
     
     // Register with taskManager for once a second execution
-    taskManager.scheduleFixedRate(1, &myClass, TIME_SECONDS);
+    taskManager.schedule(repeatSeconds(1), &myClass);
 ```
+
+The helper time functions that can be passed as the first time parameter are:
+
+* `onceMicros(N)` run once in N microseconds
+* `onceMillis(N)` run once in N milliseconds
+* `onceSeconds(N)` run once in N seconds
+* `repeatMicros(N)` repeatedly run in N microseconds
+* `repeatMillis(N)` repeatedly run in N milliseconds
+* `repeatSeconds(N)` repeatedly run in N seconds
 
 Then in the loop method you need to call: 
 
