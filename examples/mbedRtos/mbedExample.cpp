@@ -119,7 +119,7 @@ public:
 // that extends Executable. In this case the job creates a repeating task and logs to the console.
 void tenSecondJob() {
     log("30 seconds up, restart a new repeating job");
-    taskManager.scheduleFixedRate(500, [] {
+    taskManager.schedule(repeatMillis(500), [] {
         log("Half second job, micros = ", microsTask->getCurrentTicks());
     });
 }
@@ -127,7 +127,7 @@ void tenSecondJob() {
 // Again another task manager function, we pass this as the timerFn argument later on
 void twentySecondJob() {
     log("20 seconds up, delete 1 second job, schedule 10 second job");
-    taskManager.scheduleOnce(10, tenSecondJob, TIME_SECONDS);
+    taskManager.schedule(repeatSeconds(10), tenSecondJob);
     taskManager.cancelTask(oneSecondTask);
 }
 
@@ -137,28 +137,32 @@ void twentySecondJob() {
 void setupTasks() {
     // Here we create a new task using milliseconds; which is the default time unit for scheduling. We use a lambda
     // function as the means of scheduling.
-    oneSecondTask = taskManager.scheduleFixedRate(1000, [] {
+    oneSecondTask = taskManager.schedule(repeatSeconds(1), [] {
         log("One second job, micro count = ", microsTask->getCurrentTicks());
     });
 
     // Here we create a new task based on the twentySecondJob function, that will be called at the appropriate time
     // We schedule this with a unit of seconds.
-    taskManager.scheduleOnce(20, twentySecondJob, TIME_SECONDS);
+    taskManager.schedule(onceSeconds(20), twentySecondJob);
 
     // here we create a new task based on Executable and pass it to taskManager for scheduling. We provide the
     // time unit as microseconds, and with the last parameter we tell task manager to delete it when the task
     // is done, IE for one shot tasks that is as soon as it's done, for repeating tasks when it's cancelled.
     microsTask = new MicrosecondTask(0);
-    taskManager.scheduleFixedRate(100, microsTask, TIME_MICROS, true);
+    taskManager.schedule(repeatMicros(100), microsTask, true);
 
     // here we create an event that will be triggered on another thread and then notify task manager when it is
     // triggered. We will allocate using new and let task manager delete it when done.
     taskManager.registerEvent(&diceEvent);
 
+    // If you enable lambda support, then you can capture parameters, this is somewhat contentious and therefore needs to
+    // be enabled for those who want to use it by defining the below flag.
+#ifdef TM_ALLOW_CAPTURED_LAMBDA
     int capturedValue = 42;
-    taskManager.scheduleFixedRate(2, [capturedValue]() {
+    taskManager.schedule(repeatSeconds(2), [capturedValue]() {
         log("Execution with captured value = ", capturedValue);
-    }, TIME_SECONDS);
+    });
+#endif
 
     // this shows how to create a long schedule event using the new operator, make sure the second parameter is true
     // as this will delete the event when it completes.

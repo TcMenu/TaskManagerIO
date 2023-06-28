@@ -450,6 +450,22 @@ TimerTask *TaskManager::getTask(taskid_t taskId) {
     return nullptr;
 }
 
+taskid_t TaskManager::schedule(const TimePeriod &when, TimerFn timerFunction) {
+    if(when.getRepeating()) {
+        return scheduleFixedRate(when.getAmount(), timerFunction, when.getUnit());
+    } else {
+        return scheduleOnce(when.getAmount(), timerFunction, when.getUnit());
+    }
+}
+
+taskid_t TaskManager::schedule(const TimePeriod &when, Executable *execRef, bool deleteWhenDone) {
+    if(when.getRepeating()) {
+        return scheduleFixedRate(when.getAmount(), execRef, when.getUnit(), deleteWhenDone);
+    } else {
+        return scheduleOnce(when.getAmount(), execRef, when.getUnit(), deleteWhenDone);
+    }
+}
+
 #ifdef IOA_USE_MBED
 
 volatile bool timingStarted = false;
@@ -481,3 +497,11 @@ unsigned long micros() {
 }
 
 #endif
+
+TimePeriod::TimePeriod() {
+    amount = 0;
+    unit = TIME_MILLIS;
+    repeating = 0;
+}
+
+TimePeriod::TimePeriod(uint32_t amount, TimerUnit unit, bool repeat) : amount(amount), unit(unit), repeating(repeat != false) {}

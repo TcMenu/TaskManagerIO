@@ -101,32 +101,32 @@ void setup() {
     state.setData("Started");
 
     // create a task that calls the lambda function every 100 millis, it sets the state
-    taskManager.scheduleFixedRate(100, [] {
+    taskManager.schedule(repeatMillis(100), [] {
         state.setState(millis() % 10000);
         moreState.amount = millis() % 10000;
     });
 
     // create a task that runs the function provided once in 10 seconds
-    taskManager.scheduleOnce(10, [] {state.setData("Warmup"); }, TIME_SECONDS);
+    taskManager.schedule(onceSeconds(10), [] {state.setData("Warmup"); });
 
     // create a task that calls the function provided once in 30 seconds.
-    taskManager.scheduleOnce(30, [] {state.setData("Running"); }, TIME_SECONDS);
+    taskManager.schedule(onceSeconds(30), [] {state.setData("Running"); });
 
     // create a task that calls the exec method on our SharedState object every 250 millis.
-    taskManager.scheduleFixedRate(250, &state);
+    taskManager.schedule(repeatMillis(250), &state);
 
     // Create a task function that will be called with the moreState parameter. Because it's allocated with new we must
     // tell task manager to delete it when it's done with it, that's the last true parameter.
     // Note that if you allocate the thing to be scheduled using new, you must pass true as the deleteWhenDone (last)
     // parameter. This instructs task manager that it has been passed ownership of the object.
-    taskManager.scheduleFixedRate(1000, new ExecWithParameter<MoreState*>(parameterFunction, &moreState), TIME_MILLIS, true);
+    taskManager.schedule(repeatMillis(1000), new ExecWithParameter<MoreState*>(parameterFunction, &moreState), true);
 
     // Here we creaate another task to run every 3 seconds that takes two parameters. It will call a function with two
     // parameters that match the parameters in the template.
     // Note that if you allocate the thing to be scheduled using new, you must pass true as the deleteWhenDone (last)
     // parameter. This instructs task manager that it has been passed ownership of the object.
     auto paramFunction = new ExecWith2Parameters<MoreState*, SharedState*>(twoParameterFunction, &moreState, &state);
-    taskManager.scheduleFixedRate(3, paramFunction, TIME_SECONDS, true);
+    taskManager.schedule(repeatSeconds(3), paramFunction, true);
 }
 
 void loop() {

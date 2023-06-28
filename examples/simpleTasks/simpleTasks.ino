@@ -12,19 +12,23 @@
 #include <Arduino.h>
 #include "TaskManagerIO.h"
 
+// A counter that will be increased in the microsecond task.
+int counter = 0;
+
+// here we globally store the task ID of our repeating task, we need this to cancel it later.
+// ADVANCED: On supported 32 bit boards you could enable the lambda support and pass this to the other task.
+int taskId;
+
 //
 // A simple logging function that logs the time and the log line.
 //
 void logIt(const char* toLog) {
     Serial.print(millis());
     Serial.print(':');
+    Serial.print(counter);
+    Serial.print(':');
     Serial.println(toLog);
 }
-
-//
-// here we globally store the task ID of our repeating task, we need this to cancel it later.
-//
-int taskId;
 
 //
 // A task can either be a function that takes no parameters and returns void, a class that extends Executable or
@@ -34,10 +38,11 @@ void twentySecondJob() {
     logIt("20 seconds one off task");
     logIt("stop 1 second task");
     taskManager.cancelTask(taskId);
-    taskManager.scheduleOnce(10, [] {
+    taskManager.schedule(onceSeconds(10), [] {
         logIt("Ten more seconds done finished.");
-    }, TIME_SECONDS);
+    });
 }
+
 
 //
 // In setup we prepare our tasks, this is what a usual task manager sketch looks like
@@ -45,15 +50,19 @@ void twentySecondJob() {
 void setup() {
     Serial.begin(115200);
 
+    taskManager.schedule(repeatMicros(100), []{
+        counter++;
+    });
+
     // schedule a task to run at a fixed rate, every 1000 milliseconds.
-    taskId = taskManager.scheduleFixedRate(1000, [] {
+    taskId = taskManager.schedule(repeatMillis(1000), [] {
         logIt("Fixed rate, every second");
     });
 
     // schedule a task to run once in 20 seconds.
-    taskManager.scheduleOnce(20, twentySecondJob, TIME_SECONDS);
+    taskManager.schedule(onceSeconds(20), twentySecondJob);
 
-    // schedule a task to be executed immediately as a taskManager task.
+    // schedule a task to be executed as soon as possible as a taskManager task.
     taskManager.execute([] {
         logIt("To do as soon as possible");
     });

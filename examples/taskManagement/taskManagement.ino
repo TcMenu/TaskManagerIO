@@ -16,6 +16,7 @@ Written by Dave Cherry of TheCodersCorner.com in 2017
 #include <Arduino.h>
 #include <TaskManagerIO.h>
 #include <BasicInterruptAbstraction.h>
+#include "Wire.h"
 
 // here we define an interrupt capable pin that will be varied in value during execution causing the
 // task manager interrupt handler to be executed. Task manager will marshal the interrupt back into 
@@ -117,11 +118,11 @@ void setup() {
     //
 
     // We schedule the function tenSecondsUp() to be called in 10,000 milliseconds.
-    taskManager.scheduleOnce(10000, tenSecondsUp);
+    taskManager.schedule(onceSeconds(10), tenSecondsUp);
 
     // Now we schedule oneSecondPulse() to be called every second.
     // keep hold of the ID as we will later cancel it from running.
-    taskid_t taskId = taskManager.scheduleFixedRate(1, oneSecondPulse, TIME_SECONDS);
+    taskid_t taskId = taskManager.schedule(repeatSeconds(1), oneSecondPulse);
 
     //
     // now we do a yield operation, which is similar to delayMicroseconds but allows other
@@ -131,6 +132,8 @@ void setup() {
     taskManager.yieldForMicros(32000);
     log("Waited 32 milli second with yield in setup");
 
+    // If you enable lambda support, then you can capture parameters, this is somewhat contentious and therefore needs to
+    // be enabled for those who want to use it by defining the below flag.
 #ifdef TM_ALLOW_CAPTURED_LAMBDA
     // now schedule a task to run once in 30 seconds, we capture the taskId using a locally captured value. Notice that
     // this only works on 32 bit boards such as ESP*, ARM, mbed etc.
@@ -143,13 +146,13 @@ void setup() {
 #endif
 
     // and another to run repeatedly at 5 second intervals, shows the task slot status
-    taskManager.scheduleFixedRate(5, [] {
+    taskManager.schedule(repeatSeconds(5), [] {
         char slotString[32];
         log(taskManager.checkAvailableSlots(slotString, sizeof(slotString)));
-    }, TIME_SECONDS);
+    });
 
     // and now schedule onMicrosJob() to be called every 100 micros
-    taskManager.scheduleFixedRate(100, onMicrosJob, TIME_MICROS);
+    taskManager.schedule(repeatMicros(100), onMicrosJob);
 
     // register a port 2 interrupt.
     taskManager.setInterruptCallback(onInterrupt);

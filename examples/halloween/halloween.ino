@@ -39,7 +39,7 @@ public:
 
         analogWrite(pin, levelThisTime);
 
-        taskManager.scheduleOnce(delayThisTime, this);
+        taskManager.schedule(onceMillis(delayThisTime), this);
     }
 };
 
