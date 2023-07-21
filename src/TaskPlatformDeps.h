@@ -45,7 +45,8 @@ class TimerTask;
     defined(ARDUINO_EDGE_CONTROL) || \
     defined(ARDUINO_NICLA) || \
     defined(ARDUINO_NICLA_VISION) || \
-    defined(TMIOA_FORCE_ARDUINO_MBED)
+    defined(TMIOA_FORCE_ARDUINO_MBED) || \
+    defined(ARDUINO_ARCH_MBED)
 # define IOA_USE_ARDUINO
 # define ARDUINO_MBED_MODE
 # include "Arduino.h"
