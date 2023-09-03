@@ -16,6 +16,8 @@ Below, we list the main features of TaskManagerIO:
 
 ## Getting started with taskManager
 
+Youtube guide that goes through most important concepts: https://youtu.be/ucFqpzMss-4
+
 Here we just demonstrate the most basic usage. Take a look at the examples for more complex cases, or the reference documentation that's built from the source.
 
 Include the header file:
