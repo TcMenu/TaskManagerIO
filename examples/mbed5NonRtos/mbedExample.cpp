@@ -3,6 +3,9 @@
 // It demonstrates raising a few tasks for scheduling and an interrupt based event.
 // WARNING - I actually have not got a non RTOS board big enough to run this.
 //
+// There is a getting started guide including video available:
+// https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
+//
 
 #include <TaskManagerIO.h>
 

@@ -3,6 +3,9 @@
  * 3 then we raise an event. This is a polled event meaning that we rely on task manager polling to "roll the dice".
  * Further, there is a basic interrupt on a selected pin that is not marshalled by task manager, instead it raises
  * an event.
+ *
+ * There is a getting started guide including video available:
+ * https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
  */
 
 #include <TaskManagerIO.h>

@@ -5,6 +5,9 @@
  *
  * You cannot create schedules over 60 minutes using the scheduleFixedRate / scheduleOnce functions, instead you use
  * the procedure below.
+ *
+ * There is a getting started guide including video available:
+ * https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
  */
 
 #include <TaskManagerIO.h>

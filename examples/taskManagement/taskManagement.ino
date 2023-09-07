@@ -11,6 +11,9 @@ To test the interrupt support, wire a switch to pin 2 with pull up/down. Each ch
 will cause an interrupt.
 
 Written by Dave Cherry of TheCodersCorner.com in 2017
+
+There is a getting started guide including video available:
+https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
 */
 
 #include <Arduino.h>

@@ -7,6 +7,9 @@
  * NOTE: This means that there is slight latency on your code being triggered, and it should not be used for anything
  * that is even remotely time critical. For time critical items, do the work that must be done immediately in a direct
  * ISR, then trigger task manager using an event. Never add a task directly in a raw ISR.
+ *
+ * There is a getting started guide including video available:
+ * https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
  */
 
 #include <TaskManagerIO.h>

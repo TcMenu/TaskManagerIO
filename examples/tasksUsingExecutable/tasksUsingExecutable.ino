@@ -4,6 +4,9 @@
  * state between calls much easier and is still almost as simple to use with task manager as before.
  * It has a small RAM impact (8 bytes per vtable) on AVR boards because of their memory layout.
  * However, it has negligible impact on most 32 boards.
+ *
+ * There is a getting started guide including video available:
+ * https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
  */
 
 #include <TaskManagerIO.h>

@@ -3,7 +3,10 @@
  * between Arduino and mbed, so you can also look at the Arduino examples for inspiration too.
  *
  * This example shows advanced usage of taskManager covering scheduled execution, events, putting
- * events on the queue from anote
+ * events on the queue from another thread
+ *
+ * There is a getting started guide including video available:
+ * https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
  */
 
 #include <mbed.h>

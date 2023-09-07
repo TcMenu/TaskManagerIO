@@ -6,6 +6,8 @@
  * that repeat at a given interval, and tasks that are executed as soon as possible
  * by task manager. We also show how to cancel a running task.
  *
+ * There is a getting started guide including video available:
+ * https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
  */
 
 // To use task manager we must include the library

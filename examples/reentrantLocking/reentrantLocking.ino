@@ -1,3 +1,7 @@
+// Spin Locking example, not a heavily used task manager construct
+//
+// There is a getting started guide including video available:
+// https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
 
 #include <TaskManagerIO.h>
 #include <SimpleSpinLock.h>

@@ -5,6 +5,9 @@
  * This program just requires 4 LEDs that are attached to PWM capable pins with suitable resistors, if you use an Uno,
  * or other 5V board that would be around 330R. The LEDs randomly flash using task manager to schedule at random
  * intervals. Tested in my pumpkin and works fairly well. Enjoy!
+ *
+ * There is a getting started guide including video available:
+ * https://www.thecoderscorner.com/products/arduino-libraries/taskmanager-io/
  */
 #include <TaskManagerIO.h>
 
