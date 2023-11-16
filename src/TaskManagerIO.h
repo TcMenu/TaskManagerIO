@@ -22,15 +22,19 @@ enum InterruptMode;
  * outside of task manager can add, remove and manage tasks even while task manager is running.
  */
 
-#ifdef IOA_USE_MBED
+#if defined(IOA_USE_MBED) || defined(BUILD_FOR_PICO_CMAKE)
 #include <cstdint>
-/** MBED ONLY: This defines the yield function for mbed boards, as per framework on Arduino */
+/** This defines the yield function for environments that don't have the function, as per framework on Arduino */
 void yield();
-/** MBED ONLY: This defines the millis function for mbed boards by using a timer, as per framework on Arduino */
+/** MBED ONLY: This defines the millis function for environments that don't have the function, as per framework on Arduino */
 uint32_t millis();
-/** MBED ONLY: This defines the micros function to use the standard mbed us timer, as per framework on Arduino */
+/** MBED ONLY: This defines the micros function as per framework on Arduino on environments that don't have it */
 uint32_t micros();
+#ifdef IOA_USE_MBED
 #define delayMicroseconds(x) wait_us(x)
+#else
+#define delayMicroseconds(x) sleep_us(x)
+#endif // DELAY Microseconds code
 #endif // IOA_USE_MBED
 
 /**
@@ -387,6 +391,13 @@ public:
      */
     TimerTask* getRunningTask() { return runningTask; }
 
+#if defined(BUILD_FOR_PICO_CMAKE) || defined(ARDUINO_PICO_REVISION)
+    void rpiSleepingRunLoop() {
+        taskManager.runLoop();
+        auto toNextTime = taskManager.microsToNextTask();
+        sleep_us(toNextTime);
+    }
+#endif
     friend class TaskExecutionRecorder;
 private:
     /**

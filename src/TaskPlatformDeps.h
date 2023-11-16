@@ -24,7 +24,14 @@ class TimerTask;
 #endif // has include "io_local_definitions"
 
 // when not on mbed, we need to load Arduino.h to get the right defines for some boards.
-#ifndef __MBED__
+#if defined(BUILD_FOR_PICO_CMAKE)
+#include <pico/stdlib.h>
+#include <valarray>
+#ifndef min
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+#elif !defined(__MBED__)
 #include <Arduino.h>
 #endif
 
@@ -116,7 +123,6 @@ namespace tm_internal {
     }
 }
 #elif defined(ESP8266) || defined(ESP32) || defined(ARDUINO_PICO_REVISION)
-#include "Arduino.h"
 typedef uint8_t pintype_t;
 # define IOA_USE_ARDUINO
 #if defined(TM_ENABLE_CAPTURED_LAMBDAS)
@@ -244,7 +250,51 @@ namespace tm_internal {
     }
 }
 #endif
+#elif defined(BUILD_FOR_PICO_CMAKE)
+#include <pico/critical_section.h>
+#if defined(TM_ENABLE_CAPTURED_LAMBDAS)
+#define TM_ALLOW_CAPTURED_LAMBDA
+#endif
+typedef uint8_t pintype_t;
+namespace tm_internal {
+    typedef TimerTask *volatile TimerTaskAtomicPtr;
+    typedef volatile bool TmAtomicBool;
+    extern critical_section_t* tmLock;
+    void initPicoTmLock();
 
+    static bool atomicSwapBool(volatile bool *ptr, bool expected, bool newValue) {
+        bool ret = false;
+        critical_section_enter_blocking(tmLock);
+        if(*ptr == expected) {
+            *ptr = newValue;
+            ret = true;
+        }
+        critical_section_exit(tmLock);
+        return ret;
+    }
+
+    static void atomicWriteBool(volatile bool *ptr, bool val) {
+        critical_section_enter_blocking(tmLock);
+        *ptr = val;
+        critical_section_exit(tmLock);
+    }
+
+    inline bool atomicReadBool(volatile bool *ptr) {
+        bool ret = false;
+        critical_section_enter_blocking(tmLock);
+        ret = *ptr;
+        critical_section_exit(tmLock);
+        return ret;
+    }
+
+    inline void atomicWritePtr(TimerTaskAtomicPtr *ptr, TimerTask *newVal) {
+        *ptr = newVal;
+    }
+
+    inline TimerTask *atomicReadPtr(TimerTaskAtomicPtr *ptr) {
+        return *ptr;
+    }
+}
 #else
 // fall back to using Arduino regular logic, works for all single core boards. If we end up here for a multicore
 // board then there may be problems. Here we are in full arduino mode (AVR, MKR etc).
