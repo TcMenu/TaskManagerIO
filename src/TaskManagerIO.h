@@ -391,13 +391,6 @@ public:
      */
     TimerTask* getRunningTask() { return runningTask; }
 
-#if defined(BUILD_FOR_PICO_CMAKE) || defined(ARDUINO_PICO_REVISION)
-    void rpiSleepingRunLoop() {
-        taskManager.runLoop();
-        auto toNextTime = taskManager.microsToNextTask();
-        sleep_us(toNextTime);
-    }
-#endif
     friend class TaskExecutionRecorder;
 private:
     /**
