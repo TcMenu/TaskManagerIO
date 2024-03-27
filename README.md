@@ -123,8 +123,6 @@ Arduino Only - If you want to use the legacy interrupt marshalling support inste
 
 Community questions can be asked in the discussions section of this repo, or using the Arduino forum. We generally answer most community questions but the responses will not be timely. Before posting into the community make sure you've recreated the problem in a simple sketch, and please consider making at least a one time donation (see links further up):
 
-Before posting into the community make sure you've recreated the problem in a simple sketch, and please consider making at least a one time donation
-
 <a href="https://www.buymeacoffee.com/davetcc" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 * [discussions section of the Task Manager repo](https://github.com/davetcc/TaskManagerIO/discussions)
