@@ -1,0 +1,39 @@
+name: PlatformIO CI
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example:
+          - examples/eventHandling/eventHandling.ino
+          - examples/halloween/halloween.ino
+          - examples/longSchedule/longSchedule.ino
+          - examples/marshalInterrupt/marshalInterrupt.ino
+          # MBED
+          # - examples/mbed5NonRtos
+          # - examples/mbedRtos
+          - examples/reentrantLocking/reentrantLocking.ino
+          - examples/simpleTasks/simpleTasks.ino
+          - examples/taskManagement/taskManagement.ino
+          - examples/tasksUsingExecutable/tasksUsingExecutable.ino
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+
+      - name: Build PlatformIO examples
+        run: pio ci --lib "." --project-conf=platformio.ini
+        env:
+          PLATFORMIO_CI_SRC: ${{ matrix.example }}
