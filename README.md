@@ -1,9 +1,9 @@
 ## TaskManagerIO scheduling and event based library for Arudino and mbed
-[![PlatformIO](https://github.com/davetcc/TaskManagerIO/actions/workflows/platformio.yml/badge.svg)](https://github.com/davetcc/TaskManagerIO/actions/workflows/platformio.yml)
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://github.com/davetcc/TaskManagerIO/blob/master/LICENSE)
-[![GitHub release](https://img.shields.io/github/release/davetcc/TaskManagerIO.svg?maxAge=3600)](https://github.com/davetcc/TaskManagerIO/releases)
+[![PlatformIO](https://github.com/TcMenu/TaskManagerIO/actions/workflows/platformio.yml/badge.svg)](https://github.com/TcMenu/TaskManagerIO/actions/workflows/platformio.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://github.com/TcMenu/TaskManagerIO/blob/master/LICENSE)
+[![GitHub release](https://img.shields.io/github/release/TcMenu/TaskManagerIO.svg?maxAge=3600)](https://github.com/TcMenu/TaskManagerIO/releases)
 [![davetcc](https://img.shields.io/badge/davetcc-dev-blue.svg)](https://github.com/davetcc)
-[![JSC electronics](https://img.shields.io/badge/JSC-electronics-green.svg)](https://github.com/jsc-electronics)
+[![JSC TechMinds](https://img.shields.io/badge/JSC-TechMinds-green.svg)](https://www.jsctm.cz)
 
 Dave Cherry / TheCodersCorner.com made this library available for you to use. It takes me significant effort to keep all my libraries current and working on a wide range of boards. Please consider making at least a one off donation via the sponsor button if you find it useful. In forks, please keep text to here intact.
 
@@ -132,7 +132,7 @@ Community questions can be asked in the discussions section of this repo, or usi
 
 <a href="https://www.buymeacoffee.com/davetcc" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
-* [discussions section of the Task Manager repo](https://github.com/davetcc/TaskManagerIO/discussions)
+* [discussions section of the Task Manager repo](https://github.com/TcMenu/TaskManagerIO/discussions)
 * [Arduino discussion forum](https://forum.arduino.cc/) where questions can be asked, please tag me using `@davetcc`.
 * [Legacy discussion forum probably to be made read only soon](https://www.thecoderscorner.com/jforum/).
 
@@ -150,7 +150,7 @@ Many thanks to contributors for helping us to confirm that this software runs on
 
 ## What is TaskManagerIO?
 
-TaskManagerIO library is not a full RTOS, rather it can be used on top of FreeRTOS via ESP32 or mbed RTOS. It is a complimentary technology that can assist with certain types of work-load. It has a major advantage, that the same code runs on many platforms as listed above. It is a core building block of [IoAbstraction](https://github.com/davetcc/IoAbstraction) and [tcMenu framework](https://github.com/davetcc/IoAbstraction)
+TaskManagerIO library is not a full RTOS, rather it can be used on top of FreeRTOS via ESP32 or mbed RTOS. It is a complimentary technology that can assist with certain types of work-load. It has a major advantage, that the same code runs on many platforms as listed above. It is a core building block of [IoAbstraction](https://github.com/TcMenu/IoAbstraction) and [tcMenu framework](https://github.com/TcMenu/IoAbstraction)
 
 ## Important notes around scheduling tasks and events
 

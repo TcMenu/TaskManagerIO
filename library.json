@@ -4,7 +4,7 @@
   "description": "Simple efficient task management with interrupt marshalling. Provides the ability to schedule things to be done either at certain times or when events are triggered. Thread safe for RTOS use.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/davetcc/TaskManagerIO"
+    "url": "https://github.com/TcMenu/TaskManagerIO"
   },
   "authors": [
     {
