@@ -1,4 +1,4 @@
-
+// Note: AVR test. Not supported in CI/CD.
 #ifdef __AVR__
 
 #include <testing/SimpleTest.h>

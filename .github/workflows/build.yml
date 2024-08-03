@@ -1,4 +1,4 @@
-name: PlatformIO CI
+name: Build
 on: [push]
 
 jobs:
@@ -34,6 +34,6 @@ jobs:
         run: pip install --upgrade platformio
 
       - name: Build PlatformIO examples
-        run: pio ci --lib "." --project-conf=platformio.ini
+        run: pio ci --project-conf=platformio.ini
         env:
           PLATFORMIO_CI_SRC: ${{ matrix.example }}

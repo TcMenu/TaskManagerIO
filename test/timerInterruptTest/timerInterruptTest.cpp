@@ -1,4 +1,4 @@
-
+// Note: STM32 test. Not supported in CI/CD.
 #include <testing/SimpleTest.h>
 
 using namespace SimpleTest;
