@@ -1,10 +1,12 @@
-
-#include <testing/SimpleTest.h>
+#include <Arduino.h>
+#include <unity.h>
 #include <SimpleSpinLock.h>
 #include "TaskManagerIO.h"
-#include "test_utils.h"
+#include "../utils/test_utils.h"
 
-using namespace SimpleTest;
+void setUp() {}
+
+void tearDown() {}
 
 SimpleSpinLock testLock;
 taskid_t runTaskId1;
@@ -18,21 +20,20 @@ bool allGood = false;
 int runCount1, runCount2, runCount3;
 int captureCount2, captureCount3;
 
-test(testGettingRunningTaskAlwaysCorrect) {
+void testGettingRunningTaskAlwaysCorrect() {
     task1RunningPtrCheck = false;
     task2RunningPtrCheck = false;
     runCount1 = runCount2 = runCount3 = 0;
 
     taskManager.reset();
-    assertEquals(nullptr, taskManager.getRunningTask());
+    TEST_ASSERT_EQUAL(nullptr, taskManager.getRunningTask());
 
     serdebugF("Starting running task check");
 
     runTaskId1 = taskManager.scheduleFixedRate(1, [] {
         task1RunningPtrCheck = taskManager.getRunningTask() == taskManager.getTask(runTaskId1);
-        if(task1RunningPtrCheck) {
+        if (task1RunningPtrCheck) {
             taskManager.yieldForMicros(millisToMicros(1));
-
             task1RunningPtrCheck = taskManager.getRunningTask() == taskManager.getTask(runTaskId1);
         }
         runCount1++;
@@ -48,12 +49,20 @@ test(testGettingRunningTaskAlwaysCorrect) {
     unsigned long then = millis();
     taskManager.yieldForMicros(millisToMicros(100));
     int diff = int(millis() - then);
-    assertMoreThan(90, diff);
+    TEST_ASSERT_GREATER_THAN(90, diff);
 
     serdebugF("Finished running task check, asserting.");
 
-    assertTrue(task1RunningPtrCheck);
-    assertTrue(task2RunningPtrCheck);
-    assertMoreThan(30, runCount1);
-    assertMoreThan(250, runCount2);
+    TEST_ASSERT_TRUE(task1RunningPtrCheck);
+    TEST_ASSERT_TRUE(task2RunningPtrCheck);
+    TEST_ASSERT_GREATER_THAN(30, runCount1);
+    TEST_ASSERT_GREATER_THAN(250, runCount2);
 }
+
+void setup() {
+    UNITY_BEGIN();
+    RUN_TEST(testGettingRunningTaskAlwaysCorrect);
+    UNITY_END();
+}
+
+void loop() {}

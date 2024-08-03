@@ -1,9 +1,11 @@
-
-#include <testing/SimpleTest.h>
+#include <Arduino.h>
+#include <unity.h>
 #include <TaskManagerIO.h>
-#include "test_utils.h"
+#include "../utils/test_utils.h"
 
-using namespace SimpleTest;
+void setUp() {}
+
+void tearDown() {}
 
 int counts[6];
 
@@ -41,7 +43,7 @@ void testCall5() {
 // schedules, this is the most important test to pass in the whole suite.
 //
 
-class HighThroughputFixture : public UnitTestExecutor {
+class HighThroughputFixture {
 public:
     /**
      * This method checks that taskmanager tasks are in proper and stable order. And that only running tasks
@@ -71,7 +73,7 @@ public:
         if(!inOrder) dumpTasks();
 
         // assert that it's in order.
-        assertTrue(inOrder);
+        TEST_ASSERT_TRUE(inOrder);
     }
 
     void clearCounts() {
@@ -80,10 +82,11 @@ public:
     }
 };
 
-testF(HighThroughputFixture, taskManagerHighThroughputTest) {
-    char slotData[32];
-    clearCounts();
+void taskManagerHighThroughputTest() {
+    HighThroughputFixture fixture;
+    fixture.clearCounts();
 
+    char slotData[32];
     serdebugF2("Dumping threads", taskManager.checkAvailableSlots(slotData, sizeof slotData));
 
     taskManager.scheduleFixedRate(10, testCall1);
@@ -95,19 +98,19 @@ testF(HighThroughputFixture, taskManagerHighThroughputTest) {
     serdebugF2("Dumping threads", taskManager.checkAvailableSlots(slotData, sizeof slotData));
 
     unsigned long start = millis();
-    while(counts[5] < 10 && (millis() - start) < 25000) {
+    while (counts[5] < 10 && (millis() - start) < 25000) {
         taskManager.yieldForMicros(10000);
-        assertTasksAreInOrder();
+        fixture.assertTasksAreInOrder();
     }
 
     serdebugF2("Dumping threads", taskManager.checkAvailableSlots(slotData, sizeof slotData));
 
-    assertEquals(10, counts[5]); 	// should be 10 runs as it's manually repeating
-    assertMoreThan(140, counts[1]);		// should be at least 140 runs, scheduled every 100 millis,
-    assertMoreThan(14, counts[3]);		// should be at least 14 runs, as this test lasts about 20 seconds.
-    assertMoreThan(1400, counts[0]);	// should be at least 1400 runs it's scheduled every 10 millis
-    assertEquals(1, counts[4]); 		// should have been triggered once
-    assertNotEquals(0, counts[2]); 	// meaningless to count micros calls. check it happened
+    TEST_ASSERT_EQUAL(10, counts[5]);    // should be 10 runs as it's manually repeating
+    TEST_ASSERT_GREATER_THAN(140, counts[1]); // should be at least 140 runs, scheduled every 100 millis
+    TEST_ASSERT_GREATER_THAN(14, counts[3]);  // should be at least 14 runs, as this test lasts about 20 seconds
+    TEST_ASSERT_GREATER_THAN(1400, counts[0]); // should be at least 1400 runs it's scheduled every 10 millis
+    TEST_ASSERT_EQUAL(1, counts[4]);    // should have been triggered once
+    TEST_ASSERT_NOT_EQUAL(0, counts[2]); // meaningless to count micros calls. check it happened
 }
 
 //
@@ -119,7 +122,11 @@ uint8_t taskId1;
 bool taskCancelled;
 int storedCount1;
 int storedCount2;
-testF(HighThroughputFixture, testCancellingsTasksWithinAnotherTask) {
+
+void testCancellingsTasksWithinAnotherTask() {
+    HighThroughputFixture fixture;
+    fixture.clearCounts();
+
     char slotData[15];
 
     // set up for the run by clearing down state.
@@ -141,7 +148,7 @@ testF(HighThroughputFixture, testCancellingsTasksWithinAnotherTask) {
         storedCount2 = counts[2];
     });
 
-    assertTasksAreInOrder();
+    fixture.assertTasksAreInOrder();
 
     // now run the task manager until the job gets cancelled (or it times out)
     int count = 1000;
@@ -151,8 +158,8 @@ testF(HighThroughputFixture, testCancellingsTasksWithinAnotherTask) {
 
     // the cancelled job should have run at least once before cancellation
     // and then must have been cancelled. Tasks should be in order
-    assertNotEquals(0, counts[0]);
-    assertTrue(taskCancelled);
+    TEST_ASSERT_NOT_EQUAL(0, counts[0]);
+    TEST_ASSERT_TRUE(taskCancelled);
 
     count = 500;
     while (--count != 0) {
@@ -161,7 +168,7 @@ testF(HighThroughputFixture, testCancellingsTasksWithinAnotherTask) {
 
     // once the task manager has been scheduled again, the call counts should not be the same and the tasks
     // should remain in order
-    assertTasksAreInOrder();
+    fixture.assertTasksAreInOrder();
 
     // in this case we dump the queue, something is wrong.
     if (counts[1] == storedCount1) {
@@ -169,7 +176,15 @@ testF(HighThroughputFixture, testCancellingsTasksWithinAnotherTask) {
         serdebugF2("Dumping threads", taskManager.checkAvailableSlots(slotData, sizeof slotData));
     }
 
-    assertNotEquals(counts[1], storedCount1);
-    assertNotEquals(counts[2], storedCount1);
+    TEST_ASSERT_NOT_EQUAL(counts[1], storedCount1);
+    TEST_ASSERT_NOT_EQUAL(counts[2], storedCount1);
 }
 
+void setup() {
+    UNITY_BEGIN();
+    RUN_TEST(taskManagerHighThroughputTest);
+    RUN_TEST(testCancellingsTasksWithinAnotherTask);
+    UNITY_END();
+}
+
+void loop() {}

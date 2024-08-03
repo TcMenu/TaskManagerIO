@@ -1,9 +1,22 @@
-
-#include <testing/SimpleTest.h>
+#include <Arduino.h>
+#include <unity.h>
 #include "TaskManagerIO.h"
-#include "test_utils.h"
+#include "../utils/test_utils.h"
 
-using namespace SimpleTest;
+TimingHelpFixture fixture;
+
+void setUp() {
+    fixture.setup();
+}
+
+void tearDown() {}
+
+// these variables are set during test runs to time and verify tasks are run.
+bool scheduled = false;
+bool scheduled2ndJob = false;
+unsigned long microsStarted = 0, microsExecuted = 0, microsExecuted2ndJob = 0;
+int count1 = 0, count2 = 0;
+uint8_t pinNo = 0;
 
 class MockedInterruptAbstraction : public InterruptAbstraction {
 private:
@@ -49,21 +62,29 @@ void intHandler(pinid_t pin) {
 
 MockedInterruptAbstraction interruptAbs;
 
-testF(TimingHelpFixture, interruptSupportMarshalling) {
+void testInterruptSupportMarshalling() {
     taskManager.setInterruptCallback(intHandler);
     taskManager.addInterrupt(&interruptAbs, 2, CHANGE);
 
     // make sure the interrupt is properly registered.
-    assertEquals(pintype_t(2), interruptAbs.getInterruptPin());
-    assertEquals(CHANGE, interruptAbs.getTheMode());
-    assertFalse(interruptAbs.isIntHandlerNull());
+    TEST_ASSERT_EQUAL_UINT8(2, interruptAbs.getInterruptPin());
+    TEST_ASSERT_EQUAL(CHANGE, interruptAbs.getTheMode());
+    TEST_ASSERT_FALSE(interruptAbs.isIntHandlerNull());
 
     // now pretend the interrupt took place.
-    (interruptAbs.runInterrupt());
+    interruptAbs.runInterrupt();
 
     // and wait for task manager to schedule.
-    assertThatTaskRunsOnTime(0, 250);
+    fixture.assertThatTaskRunsOnTime(0, 250);
 
     // and the pin should be 2
-    assertEquals(2, pinNo);
+    TEST_ASSERT_EQUAL(2, pinNo);
 }
+
+void setup() {
+    UNITY_BEGIN();
+    RUN_TEST(testInterruptSupportMarshalling);
+    UNITY_END();
+}
+
+void loop() {}

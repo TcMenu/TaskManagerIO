@@ -1,10 +1,23 @@
-
-#include <testing/SimpleTest.h>
+#include <Arduino.h>
+#include <unity.h>
 #include <ExecWithParameter.h>
 #include "TaskManagerIO.h"
-#include "test_utils.h"
+#include "../utils/test_utils.h"
 
-using namespace SimpleTest;
+TimingHelpFixture fixture;
+
+void setUp() {
+    fixture.setup();
+}
+
+void tearDown() {}
+
+// these variables are set during test runs to time and verify tasks are run.
+bool scheduled = false;
+bool scheduled2ndJob = false;
+unsigned long microsStarted = 0, microsExecuted = 0, microsExecuted2ndJob = 0;
+int count1 = 0, count2 = 0;
+uint8_t pinNo = 0;
 
 bool taskWithinEvent;
 
@@ -59,25 +72,25 @@ bool runScheduleUntilMatchOrTimeout(TMPredicate predicate) {
     return predicate();
 }
 
-testF(TimingHelpFixture, testRaiseEventStartTaskCompleted) {
+void testRaiseEventStartTaskCompleted() {
     EnsureExecutionWithin timelyChecker(600);
 
     // first register the event
     taskManager.registerEvent(&polledEvent);
 
     // then we
-    assertTrue(runScheduleUntilMatchOrTimeout([] { return polledEvent.getScheduleCalls() >= 3; } ));
+    TEST_ASSERT_TRUE(runScheduleUntilMatchOrTimeout([] { return polledEvent.getScheduleCalls() >= 3; }));
 
     // and now we tell the event to trigger itself
     polledEvent.startTriggering();
 
     // wait until the exec() method is called
-    assertTrue(runScheduleUntilMatchOrTimeout([] { return polledEvent.getExecCalls() != 0; }));
+    TEST_ASSERT_TRUE(runScheduleUntilMatchOrTimeout([] { return polledEvent.getExecCalls() != 0; }));
 
     // and then make sure that the task registed inside the event triggers
-    assertTrue(runScheduleUntilMatchOrTimeout([] { return taskWithinEvent; }));
+    TEST_ASSERT_TRUE(runScheduleUntilMatchOrTimeout([] { return taskWithinEvent; }));
 
-    assertTrue(timelyChecker.ensureTimely());
+    TEST_ASSERT_TRUE(timelyChecker.ensureTimely());
 }
 
 class TestExternalEvent : public BaseEvent {
@@ -115,16 +128,16 @@ public:
     int getExecCalls() const { return execCalls; }
 } externalEvent;
 
-testF(TimingHelpFixture, testNotifyEventThatStartsAnotherTask) {
+void testNotifyEventThatStartsAnotherTask() {
     EnsureExecutionWithin timelyChecker(100);
     auto taskId = taskManager.registerEvent(&externalEvent);
 
-    for(int i=0; i<100; i++) {
+    for(int i = 0; i < 100; i++) {
         taskWithinEvent = false;
         externalEvent.markTriggeredAndNotify();
         taskManager.yieldForMicros(100);
-        assertTrue(runScheduleUntilMatchOrTimeout([] { return taskWithinEvent; }));
-        assertEquals(i + 1, externalEvent.getExecCalls());
+        TEST_ASSERT_TRUE(runScheduleUntilMatchOrTimeout([] { return taskWithinEvent; }));
+        TEST_ASSERT_EQUAL(i + 1, externalEvent.getExecCalls());
     }
 
     // now we let the task complete and after one more cycle it should be removed by task manager.
@@ -132,15 +145,24 @@ testF(TimingHelpFixture, testNotifyEventThatStartsAnotherTask) {
     externalEvent.markTriggeredAndNotify();
     taskManager.yieldForMicros(100);
 
-    //now it should be completely removed, and whatever we do should not affect task manager
+    // now it should be completely removed, and whatever we do should not affect task manager
     externalEvent.resetStats();
     externalEvent.markTriggeredAndNotify();
     taskManager.yieldForMicros(200);
-    assertFalse(externalEvent.wasNextCheckCalled());
-    assertEquals(0, externalEvent.getExecCalls());
+    TEST_ASSERT_FALSE(externalEvent.wasNextCheckCalled());
+    TEST_ASSERT_EQUAL(0, externalEvent.getExecCalls());
 
     // it should not be in task manager any longer.
-    assertFalse(taskManager.getTask(taskId)->isEvent());
+    TEST_ASSERT_FALSE(taskManager.getTask(taskId)->isEvent());
 
-    assertTrue(timelyChecker.ensureTimely());
+    TEST_ASSERT_TRUE(timelyChecker.ensureTimely());
 }
+
+void setup() {
+    UNITY_BEGIN();
+    RUN_TEST(testRaiseEventStartTaskCompleted);
+    RUN_TEST(testNotifyEventThatStartsAnotherTask);
+    UNITY_END();
+}
+
+void loop() {}
