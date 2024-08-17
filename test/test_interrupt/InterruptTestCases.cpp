@@ -74,8 +74,10 @@ void testInterruptSupportMarshalling() {
     // now pretend the interrupt took place.
     interruptAbs.runInterrupt();
 
-    // and wait for task manager to schedule.
-    fixture.assertThatTaskRunsOnTime(0, 250);
+    // and wait for task manager to schedule. Note that the delay is very large, this is because the test is running
+    // on CI where the time to handle such an interrupt on an emulator will be more significant, we are not testing
+    // performance, rather functionality.
+    fixture.assertThatTaskRunsOnTime(0, 1500);
 
     // and the pin should be 2
     TEST_ASSERT_EQUAL(2, pinNo);
