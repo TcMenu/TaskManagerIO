@@ -10,7 +10,7 @@ target_compile_definitions(TaskManagerIO
 )
 
 target_include_directories(TaskManagerIO PUBLIC
-        ${PROJECT_SOURCE_DIR}/TaskManagerIO/src
+        ${PROJECT_SOURCE_DIR}/lib/TaskManagerIO/src
 )
 
-target_link_libraries(TaskManagerIO PUBLIC pico_stdlib pico_sync)
+target_link_libraries(TaskManagerIO PUBLIC TcMenuLog pico_stdlib pico_sync)
