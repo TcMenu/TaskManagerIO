@@ -449,7 +449,7 @@ void TaskManager::setInterruptCallback(InterruptFn handler) {
 }
 
 char* TaskManager::checkAvailableSlots(char* data, size_t dataSize) const {
-    auto maxLen = min(taskid_t(dataSize - 1), taskBlocks[numberOfBlocks - 1]->lastSlot());
+    auto maxLen = internal_min(taskid_t(dataSize - 1), taskBlocks[numberOfBlocks - 1]->lastSlot());
     size_t position = 0;
 
     for(taskid_t i=0; i<numberOfBlocks;i++) {

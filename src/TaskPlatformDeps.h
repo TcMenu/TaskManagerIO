@@ -411,7 +411,7 @@ typedef uint32_t sched_t;
 #endif // GCC>=5 and !TM_ALLOW_CAPTURED_LAMBDA
 
 #ifndef internal_min
-#define internal_min(a, b)  ((a) > (b) ? (b) : (a));
+#define internal_min(a, b)  ((a) > (b) ? (b) : (a))
 #endif // internal_min
 
 #ifndef internal_max
