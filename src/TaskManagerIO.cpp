@@ -6,6 +6,7 @@
 #include "TaskPlatformDeps.h"
 #include "TaskManagerIO.h"
 #include "ExecWithParameter.h"
+#include <IoLogging.h>
 
 #ifdef BUILD_FOR_PICO_CMAKE
 critical_section_t* tm_internal::tmLock;
@@ -20,21 +21,9 @@ void tm_internal::initPicoTmLock() {
 void yield() {
     sleep_us(1);
 }
-
-unsigned long millis() {
-    return to_ms_since_boot(get_absolute_time());
-}
-
-unsigned long micros() {
-    return to_us_since_boot(get_absolute_time());
-}
-
 #endif
 
 #ifdef IOA_USE_MBED
-
-volatile bool timingStarted = false;
-Timer ioaTimer;
 
 void yield() {
 
@@ -44,35 +33,10 @@ void yield() {
     wait(0.0000001);
 #endif
 }
-
-unsigned long millis() {
-    if(!timingStarted) {
-        timingStarted = true;
-        ioaTimer.start();
-    }
-    return ioaTimer.read_ms();
-}
-
-unsigned long micros() {
-    if(!timingStarted) {
-        timingStarted = true;
-        ioaTimer.start();
-    }
-    return (unsigned long) ioaTimer.read_high_resolution_us();
-}
-
 #endif
 
 
 TaskManager taskManager;
-
-namespace tm_internal {
-    LoggingDelegate loggingDelegate = nullptr;
-
-    void setLoggingDelegate(LoggingDelegate delegate) {
-        loggingDelegate = delegate;
-    }
-}
 
 class TmSpinLock {
 private:
@@ -85,14 +49,14 @@ public:
             locked = tm_internal::atomicSwapBool(lockObject, false, true);
             if(!locked) {
                 yield(); // something else has the lock, let it get control to finish up!
-                if(++count == 1000) tm_internal::tmNotification(tm_internal::TM_WARN_HIGH_SPINCOUNT, TASKMGR_INVALIDID);
+                if(++count == 1000) serlogF(SER_WARNING, "TM spin>1000");
             }
         } while(!locked);
     }
 
     ~TmSpinLock() {
         if(!tm_internal::atomicSwapBool(lockObject, true, false)) {
-            tm_internal::tmNotification(tm_internal::TM_ERROR_LOCK_FAILURE, TASKMGR_INVALIDID);
+            serlogF(SER_ERROR, "TM lock fail");
         }
     }
 };
@@ -129,14 +93,14 @@ taskid_t TaskManager::findFreeTask() {
         for (taskid_t i=0; i<numberOfBlocks;i++) {
             auto taskId = taskBlocks[i]->allocateTask();
             if(taskId != TASKMGR_INVALIDID) {
-                tm_internal::tmNotification(tm_internal::TM_INFO_TASK_ALLOC, taskId);
+                serlogF2(SER_IOA_DEBUG, "TM alloc", taskId);
                 return taskId;
             }
         }
 
         // already full, cannot allocate further.
         if(numberOfBlocks == DEFAULT_TASK_BLOCKS) {
-            tm_internal::tmNotification(tm_internal::TM_ERROR_FULL, TASKMGR_INVALIDID);
+            serlogF(SER_ERROR, "TM full");
             return TASKMGR_INVALIDID;
         }
 
@@ -148,11 +112,11 @@ taskid_t TaskManager::findFreeTask() {
             auto nextIdSpace = taskBlocks[numberOfBlocks - 1]->lastSlot() + 1;
             taskBlocks[numberOfBlocks] = new TaskBlock(nextIdSpace);
             if(taskBlocks[numberOfBlocks] != nullptr) {
-                tm_internal::tmNotification(tm_internal::TM_INFO_REALLOC, numberOfBlocks);
+                serlogF2(SER_IOA_DEBUG, "TM alloc: ", numberOfBlocks);
                 numberOfBlocks++;
             }
             else {
-                tm_internal::tmNotification(tm_internal::TM_ERROR_FULL, numberOfBlocks);
+                serlogF(SER_ERROR, "TM full");
                 break;  // no point to continue here, new has failed.
             }
         }
@@ -229,7 +193,7 @@ void TaskManager::cancelTask(taskid_t taskId) {
 	if (task) {
 	    taskManager.execute(new ExecWith2Parameters<TimerTask*, TaskManager*>([](TimerTask* task, TaskManager* tm) {
             tm->removeFromQueue(task);
-            tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
+            serlogF(SER_IOA_DEBUG, "TM free");
             task->clear();
 	    }, task, this), true);
 	}
@@ -278,7 +242,7 @@ void TaskManager::dealWithInterrupt() {
                 }
                 else {
                     task->clear();
-                    tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
+                    serlogF(SER_IOA_DEBUG, "TM free int");
                 }
             }
             else {
@@ -309,7 +273,7 @@ void TaskManager::runLoop() {
                 putItemIntoQueue(tm);
             } else {
                 tm->clear();
-                tm_internal::tmNotification(tm_internal::TM_INFO_TASK_FREE, TASKMGR_INVALIDID);
+                serlogF(SER_IOA_DEBUG, "TM free loop");
             }
         }
         tm = tm->getNext();
@@ -485,7 +449,7 @@ void TaskManager::setInterruptCallback(InterruptFn handler) {
 }
 
 char* TaskManager::checkAvailableSlots(char* data, size_t dataSize) const {
-    auto maxLen = min(taskid_t(dataSize - 1), taskBlocks[numberOfBlocks - 1]->lastSlot());
+    auto maxLen = internal_min(taskid_t(dataSize - 1), taskBlocks[numberOfBlocks - 1]->lastSlot());
     size_t position = 0;
 
     for(taskid_t i=0; i<numberOfBlocks;i++) {

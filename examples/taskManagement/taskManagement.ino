@@ -104,14 +104,6 @@ void setup() {
     Serial.print(", blocks = ");
     Serial.println(DEFAULT_TASK_BLOCKS);
 
-    // if you want to receive notifications from task manager, provide a loggingDelegate as below.
-    tm_internal::setLoggingDelegate([] (tm_internal::TmErrorCode code, int id) {
-        Serial.print("TM Notification code=");
-        Serial.print(code);
-        Serial.print(", id=");
-        Serial.println(id);
-    });
-
     // connect a switch to interruptPin, so you can raise interrupts.
     pinMode(interruptPin, INPUT);
 
