@@ -13,7 +13,12 @@
       "maintainer": true
     }
   ],
-  "version": "1.4.3",
+  "dependencies": [
+    {
+      "name": "TcMenuLog"
+    }
+  ],
+  "version": "1.5.0",
   "license": "Apache-2.0",
   "frameworks": "arduino, mbed",
   "platforms": "*"
