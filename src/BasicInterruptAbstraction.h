@@ -6,8 +6,8 @@
 #ifndef TASKMANAGERIO_BASICINTERRUPTABSTRACTION_H
 #define TASKMANAGERIO_BASICINTERRUPTABSTRACTION_H
 
-#include <TaskPlatformDeps.h>
-#include <TaskManagerIO.h>
+#include "TaskPlatformDeps.h"
+#include "TaskManagerIO.h"
 
 #ifdef IOA_USE_ARDUINO
 

@@ -1,4 +1,6 @@
-add_library(TaskManagerIO
+cmake_minimum_required(VERSION 3.13)
+
+add_library(TaskManagerIO 
         ../src/SimpleSpinLock.cpp
         ../src/TaskManagerIO.cpp
         ../src/TaskTypes.cpp
@@ -10,7 +12,7 @@ target_compile_definitions(TaskManagerIO
 )
 
 target_include_directories(TaskManagerIO PUBLIC
-        ${PROJECT_SOURCE_DIR}/lib/TaskManagerIO/src
+        ../src
 )
 
 target_link_libraries(TaskManagerIO PUBLIC TcMenuLog pico_stdlib pico_sync)

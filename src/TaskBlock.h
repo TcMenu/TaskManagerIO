@@ -6,8 +6,8 @@
 #ifndef _TASKMANAGERIO_TASKBLOCK_H_
 #define _TASKMANAGERIO_TASKBLOCK_H_
 
-#include <TaskPlatformDeps.h>
-#include <TaskTypes.h>
+#include "TaskPlatformDeps.h"
+#include "TaskTypes.h"
 
 /**
  * @file TaskBlock.h
