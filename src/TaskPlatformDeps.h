@@ -199,12 +199,23 @@ namespace tm_internal {
 
     typedef TimerTask* volatile TimerTaskAtomicPtr;
     typedef volatile uint32_t TmAtomicBool; // to use CAS, the bool must be 32 bits wide
+
+
+// `uxPortCompareSet` was removed in ESP-IDF v5.0
+// See https://github.com/TcMenu/TaskManagerIO/issues/59
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
     inline bool atomicSwapBool(TmAtomicBool *ptr, bool expected, bool newValue) {
         uint32_t exp32 = expected;
         uint32_t new32 = newValue;
         uxPortCompareSet(ptr, exp32, &new32);
         return new32 == expected;
     }
+#else
+    inline bool atomicSwapBool(TmAtomicBool *ptr, bool expected, bool newValue) {
+        // function added in ESP-IDF v5.0
+        return esp_cpu_compare_and_set(ptr, expected, newValue);
+    }
+#endif
 
     /**
      * Reads an atomic boolean value
