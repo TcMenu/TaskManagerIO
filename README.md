@@ -14,7 +14,7 @@ TaskManagerIO is an evolution of the task management class that was originally s
 
 We are in a new era of embedded development, where RTOS, multiple threads (and even cores) have become a relatity. Any viable task manager needs to be capable in these environments, while still protecting tasks from multithreaded concerns. We are pleased to say, this version meets both goals. Importantly, any sketch that worked on IoAbstraction task manager will work with this library unaffected. 
 
-Along with this library working on most Arduino based devices, it is also tested by us on an mbed board (STM32F4) and PicoSDK.
+Along with this library working on most Arduino based devices, it is also tested by us on PicoSDK and ESP-IDF with an Arduino component..
 
 Below, we list the main features of TaskManagerIO:
 
@@ -50,7 +50,7 @@ In the setup method, add an function callback that gets fired once in the future
 	});
 ```
 
-From 1.2 onwards: On ESP8266, ESP32, all mbed boards, and most 32 bit Arduino boards you can also *enable* argument capture in lambda expressions. By default, the feature is off because it is quite a heavy feature that many may never use.
+From 1.2 onwards: On most 32 bit Arduino boards you can also *enable* argument capture in lambda expressions. By default, the feature is off because it is quite a heavy feature that many may never be used.
 
 To enable add the following flag to your compile options, and it will be enabled if the board supports it: `-DTM_ENABLE_CAPTURED_LAMBDAS`
 
@@ -151,7 +151,7 @@ Many thanks to contributors for helping us to confirm that this software runs on
 
 ## What is TaskManagerIO?
 
-TaskManagerIO library is not a full RTOS, rather it can be used on top of FreeRTOS via ESP32 or mbed RTOS. It is a complimentary technology that can assist with certain types of work-load. It has a major advantage, that the same code runs on many platforms as listed above. It is a core building block of [IoAbstraction](https://github.com/TcMenu/IoAbstraction) and [tcMenu framework](https://github.com/TcMenu/IoAbstraction)
+TaskManagerIO library is not a full RTOS, rather it can be used on top of an existing RTOS. It is a complimentary technology that can assist with certain types of work-load. It has a major advantage, that the same code runs on many platforms as listed above. It is a core building block of [IoAbstraction](https://github.com/TcMenu/IoAbstraction) and [tcMenu framework](https://github.com/TcMenu/IoAbstraction)
 
 ## Important notes around scheduling tasks and events
 
@@ -162,8 +162,8 @@ TaskManagerIO is a cooperative scheduler, and cooperative schedulers by their ve
 TaskManager uses a lock free design, based on "compare and exchange" to acheive thread safety on larger boards, atomic operations on AVR, and interrupt locking back-up on other boards. Below, we discuss the multi-threaded features in more detail.
 
 * On any board, it is safe to add tasks and raise events from any thread. We use whatever atomic operations are available for that board to ensure safety.
+* On ESP32 FreeRTOS, PicoSDK, and Arduino RTOS based boards it is safe to add tasks to a taskManager from another core, on these platforms task manager uses the processors compare and exchange functionality to ensure thread safety as much as possible.
 * On any board, you can start another thread and run a task manager on it. Only ever call task-manager's runLoop() from the same thread.
-* On ESP32 FreeRTOS and mbed RTOS6 it is safe to add tasks to a taskManager from another core, on these platforms task manager uses the processors compare and exchange functionality to ensure thread safety as much as possible.
 
 ## Helping out
 
