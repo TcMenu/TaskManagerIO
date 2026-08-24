@@ -33,18 +33,25 @@ class TimerTask;
 
 #if defined(__MBED__) && !defined(ARDUINO_PICO_REVISION)
 #include "platform/mbedCas.h"
-#elif defined(ESP8266) || defined(ESP32) || defined(ARDUINO_PICO_REVISION)
+#elif defined(ESP8266)
+#undef  BOARD_SUPPORTS_PROPER_CAS
+#define IOA_USE_ARDUINO
 typedef uint8_t pintype_t;
-# define IOA_USE_ARDUINO
-#if defined(ESP8266) || defined(ARDUINO_PICO_REVISION)
 #include "platform/wrapAtomic.h"
-#else
-#endif
-#include "platform/idfRtosCas.h"
-#elif defined(BUILD_FOR_PICO_CMAKE)
-#include "platform/picoCritical.h"
+#elif defined(ESP32)
+typedef uint8_t pintype_t;
+#define IOA_USE_ARDUINO
+#define BOARD_SUPPORTS_PROPER_CAS
+#include "platform/wrapAtomic.h"
+#elif defined(BUILD_FOR_PICO_CMAKE) || defined(ARDUINO_PICO_REVISION)
+#include "platform/picosdkSupport.h"
 #elif defined(BUILD_FOR_STM32CUBE_CMAKE)
 #include "platform/stmCubeCas.h"
+#elif defined(ARDUINO_ARCH_STM32)
+typedef uint8_t pintype_t;
+#define IOA_USE_ARDUINO
+#define BOARD_SUPPORTS_PROPER_CAS
+#include "platform/wrapAtomic.h"
 #else
 #include "platform/arduinoFallback.h"
 #endif // All platform checks
@@ -84,7 +91,7 @@ typedef uint32_t sched_t;
 #else
 # define DEFAULT_TASK_SIZE 16
 # define DEFAULT_TASK_BLOCKS 16
-#endif // platform
+#endif
 #else
 #ifndef DEFAULT_TASK_BLOCKS
 #define DEFAULT_TASK_BLOCKS 8

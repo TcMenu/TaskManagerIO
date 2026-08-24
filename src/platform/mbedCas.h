@@ -1,6 +1,5 @@
 #ifndef TASKMANAGER_IO_MBED_RTOS_CAS_H
 #define TASKMANAGER_IO_MBED_RTOS_CAS_H
-#include "stmCubeCas.h"
 
 #if defined(TM_ENABLE_CAPTURED_LAMBDAS)
 #define TM_ALLOW_CAPTURED_LAMBDA
@@ -42,6 +41,8 @@ typedef uint32_t pintype_t;
 namespace tm_internal {
     typedef TimerTask* volatile TimerTaskAtomicPtr;
     typedef volatile bool TmAtomicBool;
+    typedef volatile uint32_t position_t;
+    typedef volatile uint32_t* position_ptr_t;
 
     /**
      * Sets the boolean to the new value ONLY when the existing value matches expected.
@@ -52,6 +53,17 @@ namespace tm_internal {
      */
     inline bool atomicSwapBool(volatile bool *ptr, bool expected, bool newValue) {
         return core_util_atomic_cas_bool(ptr, &expected, newValue);
+    }
+
+    inline bool atomicSwap32(volatile uint32_t *ptr, uint32_t expected, uint32_t newValue) {
+        return core_util_atomic_cas_u32(ptr, &expected, newValue);
+    }
+
+    /**
+     * Reads the value in an atomic boolean object
+     */
+    inline bool atomicRead32(position_t *pPtr) {
+        return *pPtr;
     }
 
     /**

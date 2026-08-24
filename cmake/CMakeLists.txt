@@ -5,6 +5,9 @@ add_library(TaskManagerIO
         ../src/TaskManagerIO.cpp
         ../src/TaskTypes.cpp
         ../src/TmLongSchedule.cpp
+        ../src/SimpleCollections.cpp
+        ../src/SimpleSpinLock.cpp
+        ../src/platform/ThreadHelperCode.cpp
 )
 
 if (BUILD_FOR_STM32CUBE)

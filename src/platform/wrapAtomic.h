@@ -6,24 +6,35 @@
 namespace tm_internal {
 
     typedef std::atomic<TimerTask *> TimerTaskAtomicPtr;
+    typedef std::atomic<uint32_t>    TmAtomicBool;
+    typedef std::atomic<uint32_t>    position_t;
+    typedef std::atomic<uint32_t>*   position_ptr_t;
 
-    typedef std::atomic<uint32_t> TmAtomicBool;
 
-#ifdef BOARD_SUPPORTS_PROPER_CAS
-    inline bool atomicSwapBool(TmAtomicBool *ptr, bool exp, bool nv) {
-        uint32_t expected = exp;
-        const uint32_t newValue = nv;
+#if defined(ATOMIC_INT_LOCK_FREE) && (ATOMIC_INT_LOCK_FREE == 2)
+    inline bool atomicSwap32(std::atomic<uint32_t> *ptr, uint32_t expected, uint32_t newValue) {
         return ptr->compare_exchange_strong(expected, newValue);
+    }
+#elif defined(PICO_NEEDS_PROTECTOR)
+    inline bool atomicSwap32(std::atomic<uint32_t> *ptr, uint32_t expected, uint32_t newValue) {
+        // compare and swap is not implemented on ESP8266
+        auto ret = false;
+        TmPicoProtector protector;
+        if(ptr->load() == expected) {
+            ptr->store(newValue);
+            ret = true;
+        }
+        return ret;
     }
 #else
     /**
-     * Sets the boolean to the new value ONLY when the existing value matches expected.
-     * @param ptr the bool memory location to compare / swap
+     * Sets the integer to the new value ONLY when the existing value matches expected.
+     * @param ptr the memory location to compare / swap
      * @param expected the expected value
      * @param newValue the replacement, replaced on if expected matches
      * @return true if the replacement was done, otherwise false
      */
-    inline bool atomicSwapBool(TmAtomicBool *ptr, bool expected, bool newValue) {
+    inline bool atomicSwap32(std::atomic<uint32_t> *ptr, uint32_t expected, uint32_t newValue) {
         // compare and swap is not implemented on ESP8266
         auto ret = false;
         noInterrupts();
@@ -36,6 +47,21 @@ namespace tm_internal {
     }
 
 #endif
+
+    inline uint32_t atomicRead32(const std::atomic<uint32_t>* atomicType) {
+        return atomicType->load();
+    }
+
+    /**
+     * Sets the boolean to the new value ONLY when the existing value matches expected.
+     * @param ptr the memory location to compare / swap
+     * @param expected the expected value
+     * @param newValue the replacement, replaced on if expected matches
+     * @return true if the replacement was done, otherwise false
+     */
+    inline bool atomicSwapBool(TmAtomicBool *ptr, bool expected, bool newValue) {
+        return atomicSwap32(ptr, expected, newValue);
+    }
 
     /**
      * Reads an atomic boolean value
