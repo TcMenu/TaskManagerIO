@@ -9,12 +9,6 @@
 #include <IoLogging.h>
 
 #ifdef BUILD_FOR_PICO_CMAKE
-critical_section_t* tm_internal::tmLock;
-
-void tm_internal::initPicoTmLock() {
-    tmLock = new critical_section_t;
-    critical_section_init(tmLock);
-}
 
 #include <cctype>
 
@@ -68,9 +62,6 @@ ISR_ATTR void TaskManager::markInterrupted(pintype_t interruptNo) {
 }
 
 TaskManager::TaskManager() : taskBlocks {} {
-#ifdef BUILD_FOR_PICO_CMAKE
-    tm_internal::initPicoTmLock();
-#endif
 	interrupted = false;
 	tm_internal::atomicWritePtr(&first, nullptr);
 	interruptCallback = nullptr;

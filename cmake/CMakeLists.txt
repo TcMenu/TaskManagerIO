@@ -6,6 +6,7 @@ add_library(TaskManagerIO
         ../src/TaskTypes.cpp
         ../src/TmLongSchedule.cpp
         ../src/SimpleCollections.cpp
+        ../src/SCCircularBuffer.cpp
         ../src/SimpleSpinLock.cpp
         ../src/platform/ThreadHelperCode.cpp
 )

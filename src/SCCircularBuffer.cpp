@@ -18,6 +18,14 @@ SCCircularBuffer::~SCCircularBuffer() {
     delete[] buffer;
 }
 
+void SCCircularBuffer::put(uint8_t by) {
+    buffer[nextPosition(&writerPosition)] = by;
+}
+
+uint8_t SCCircularBuffer::get() {
+    return buffer[nextPosition(&readerPosition)];
+}
+
 uint16_t SCCircularBuffer::nextPosition(position_ptr_t positionPtr) const {
     bool successfullyUpdated = false;
     uint32_t existing = 0;

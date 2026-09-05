@@ -84,9 +84,9 @@ namespace tccollection {
 
         [[nodiscard]] bool available() const { return readerPosition != writerPosition; }
 
-        void put(uint8_t by) { buffer[nextPosition(&writerPosition)] = by; }
+        void put(uint8_t by);
 
-        uint8_t get() { return buffer[nextPosition(&readerPosition)]; }
+        uint8_t get();
 
     private:
         uint16_t nextPosition(position_ptr_t by) const;
