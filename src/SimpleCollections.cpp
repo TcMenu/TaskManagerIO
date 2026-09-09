@@ -5,7 +5,7 @@
 
 #ifdef __AVR__
 #include <Arduino.h>
-#else
+#elif !defined (BUILD_FOR_NATIVE_PLATFORM)
 #include <malloc.h>
 #endif
 #include "SimpleCollections.h"

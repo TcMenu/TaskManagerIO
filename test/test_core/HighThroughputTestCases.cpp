@@ -1,11 +1,6 @@
-#include <Arduino.h>
-#include <unity.h>
 #include <TaskManagerIO.h>
-#include "../utils/test_utils.h"
-
-void setUp() {}
-
-void tearDown() {}
+#include "test_utils.h"
+#include <unity.h>
 
 int counts[6];
 
@@ -86,7 +81,7 @@ void taskManagerHighThroughputTest() {
     HighThroughputFixture fixture;
     fixture.clearCounts();
 
-    char slotData[32];
+    char slotData[64];
     serdebugF2("Dumping threads", taskManager.checkAvailableSlots(slotData, sizeof slotData));
 
     taskManager.scheduleFixedRate(10, testCall1);
@@ -111,6 +106,7 @@ void taskManagerHighThroughputTest() {
     TEST_ASSERT_GREATER_THAN(1400, counts[0]); // should be at least 1400 runs it's scheduled every 10 millis
     TEST_ASSERT_EQUAL(1, counts[4]);    // should have been triggered once
     TEST_ASSERT_NOT_EQUAL(0, counts[2]); // meaningless to count micros calls. check it happened
+    taskManager.reset();
 }
 
 //
@@ -178,13 +174,6 @@ void testCancellingsTasksWithinAnotherTask() {
 
     TEST_ASSERT_NOT_EQUAL(counts[1], storedCount1);
     TEST_ASSERT_NOT_EQUAL(counts[2], storedCount1);
-}
+    taskManager.reset();
 
-void setup() {
-    UNITY_BEGIN();
-    RUN_TEST(taskManagerHighThroughputTest);
-    RUN_TEST(testCancellingsTasksWithinAnotherTask);
-    UNITY_END();
 }
-
-void loop() {}

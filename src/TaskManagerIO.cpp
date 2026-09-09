@@ -457,7 +457,7 @@ char* TaskManager::checkAvailableSlots(char* data, size_t dataSize) const {
 	return data;
 }
 
-TimerTask *TaskManager::getTask(taskid_t taskId) {
+TimerTask *TaskManager::getTask(taskid_t taskId) const {
     for(taskid_t i=0; i<numberOfBlocks; i++) {
         auto possibleTask = taskBlocks[i]->getContainedTask(taskId);
         if(possibleTask != nullptr) return possibleTask;

@@ -1,10 +1,10 @@
-#include <Arduino.h>
-#include <unity.h>
 #include <ExecWithParameter.h>
 #include <IoLogging.h>
 #include "TaskManagerIO.h"
-#include "../utils/test_utils.h"
+#include "test_utils.h"
+#include <unity.h>
 
+class TimerTask;
 TimingHelpFixture fixture;
 
 void setUp() {
@@ -54,18 +54,21 @@ void testRunningUsingExecutorClass() {
 
     fixture.assertThatTaskRunsOnTime(250000L, MILLIS_ALLOWANCE);
     TEST_ASSERT_GREATER_THAN(10, ::exec.noOfTimesRun);
+    taskManager.reset();
 }
 
 void testSchedulingTaskOnceInMicroseconds() {
     taskManager.scheduleOnce(800, recordingJob, TIME_MICROS);
     fixture.assertThatTaskRunsOnTime(800, MICROS_ALLOWANCE);
     fixture.assertTasksSpacesTaken(0);
+    taskManager.reset();
 }
 
 void testSchedulingTaskOnceInMilliseconds() {
     taskManager.scheduleOnce(20, recordingJob, TIME_MILLIS);
     fixture.assertThatTaskRunsOnTime(19500, MILLIS_ALLOWANCE);
     fixture.assertTasksSpacesTaken(0);
+    taskManager.reset();
 }
 
 void testSchedulingTaskOnceInSeconds() {
@@ -73,6 +76,7 @@ void testSchedulingTaskOnceInSeconds() {
     // Second scheduling is not as granular, we need to allow +- 100mS.
     fixture.assertThatTaskRunsOnTime(2000000L, MILLIS_ALLOWANCE);
     fixture.assertTasksSpacesTaken(0);
+    taskManager.reset();
 }
 
 void testScheduleManyJobsAtOnce() {
@@ -83,6 +87,7 @@ void testScheduleManyJobsAtOnce() {
     fixture.assertThatTaskRunsOnTime(199500, MILLIS_ALLOWANCE);
     fixture.assertThatSecondJobRan(250, MICROS_ALLOWANCE);
     fixture.assertTasksSpacesTaken(1);
+    taskManager.reset();
 }
 
 void testEnableAndDisableSupport() {
@@ -106,6 +111,7 @@ void testEnableAndDisableSupport() {
     taskManager.setTaskEnabled(myTaskId, true);
     taskManager.yieldForMicros(20000);
     TEST_ASSERT_NOT_EQUAL(myTaskCounter, oldTaskCount);
+    taskManager.reset();
 }
 
 void testScheduleFixedRate() {
@@ -143,6 +149,7 @@ void testScheduleFixedRate() {
     // Now make sure that we got in the right ballpark of calls.
     TEST_ASSERT_GREATER_THAN(1, count1);
     TEST_ASSERT_GREATER_THAN(150, count2);
+    taskManager.reset();
 }
 
 void testCancellingAJobAfterCreation() {
@@ -167,9 +174,30 @@ void testCancellingAJobAfterCreation() {
     fixture.assertTasksSpacesTaken(0);
 
     TEST_ASSERT_EQUAL(nullptr, taskManager.getFirstTask());
+    taskManager.reset();
 }
 
-void setup() {
+void testNearestLocationEdgeCases();
+void testAddingWithoutSortOrResize();
+void testAddingWithSortNoResize();
+void testAddingWithSortAndResizeBy5();
+void testAddingThenRemovingThenAddingItems();
+void testThreadedWriterAndReader();
+void testWritingAndThenReadingMoreThanAvailable();
+void testWritingAndThenReadingWithoutLoss();
+
+void testRaiseEventStartTaskCompleted();
+void testNotifyEventThatStartsAnotherTask();
+
+void taskManagerHighThroughputTest();
+void testCancellingsTasksWithinAnotherTask();
+
+void testGettingRunningTaskAlwaysCorrect();
+
+void testMultiThreadedAccessToTaskManager();
+
+#if defined(BUILD_FOR_NATIVE_PLATFORM)
+int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(testRunningUsingExecutorClass);
     RUN_TEST(testSchedulingTaskOnceInMicroseconds);
@@ -179,7 +207,28 @@ void setup() {
     RUN_TEST(testEnableAndDisableSupport);
     RUN_TEST(testScheduleFixedRate);
     RUN_TEST(testCancellingAJobAfterCreation);
-    UNITY_END();
-}
 
-void loop() {}
+    // Event test cases
+    RUN_TEST(testRaiseEventStartTaskCompleted);
+    RUN_TEST(testNotifyEventThatStartsAnotherTask);
+
+    RUN_TEST(testMultiThreadedAccessToTaskManager);
+
+    // High throughput test cases
+    RUN_TEST(taskManagerHighThroughputTest);
+    RUN_TEST(testCancellingsTasksWithinAnotherTask);
+
+    RUN_TEST(testGettingRunningTaskAlwaysCorrect);
+
+    RUN_TEST(testNearestLocationEdgeCases);
+    RUN_TEST(testAddingWithoutSortOrResize);
+    RUN_TEST(testAddingWithSortNoResize);
+    RUN_TEST(testAddingWithSortAndResizeBy5);
+    RUN_TEST(testAddingThenRemovingThenAddingItems);
+    RUN_TEST(testWritingAndThenReadingWithoutLoss);
+    RUN_TEST(testWritingAndThenReadingMoreThanAvailable);
+    RUN_TEST(testThreadedWriterAndReader);
+
+    return UNITY_END();
+}
+#endif

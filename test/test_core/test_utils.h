@@ -1,7 +1,6 @@
 #ifndef TASKMANGERIO_TEST_UTILS_H
 #define TASKMANGERIO_TEST_UTILS_H
 
-#include <Arduino.h>
 #include <unity.h>
 #include <IoLogging.h>
 
@@ -95,7 +94,7 @@ public:
     }
 };
 
-void dumpTasks() {
+inline void dumpTasks() {
     serdebugF("Dumping the task queue contents");
     TimerTask* task = taskManager.getFirstTask();
     while(task) {

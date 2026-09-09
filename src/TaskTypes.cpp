@@ -47,11 +47,11 @@ void TimerTask::handleScheduling(sched_t when, TimerUnit unit, bool repeating) {
     tm_internal::atomicWritePtr(&next, nullptr);
 
     if(unit == TIME_SECONDS) {
-        when = when * sched_t(1000);
+        when = when * static_cast<sched_t>(1000);
         unit = TIME_MILLIS;
     }
     this->myTimingSchedule = when;
-    this->timingInformation = repeating ? TimerUnit(unit | TM_TIME_REPEATING)  : unit;
+    this->timingInformation = repeating ? static_cast<TimerUnit>(unit | TM_TIME_REPEATING)  : unit;
     this->scheduledAt = (isMicrosSchedule()) ? micros() : millis();
     taskEnabled = true;
 }
@@ -59,13 +59,13 @@ void TimerTask::handleScheduling(sched_t when, TimerUnit unit, bool repeating) {
 void TimerTask::initialise(uint32_t when, TimerUnit unit, Executable* execCallback, bool deleteWhenDone, bool repeating) {
     handleScheduling(when, unit, repeating);
     this->taskRef = execCallback;
-    this->executeMode = deleteWhenDone ? ExecutionType(EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EXECUTABLE;
+    this->executeMode = deleteWhenDone ? static_cast<ExecutionType>(EXECTYPE_EXECUTABLE | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EXECUTABLE;
 }
 
 void TimerTask::initialiseEvent(BaseEvent* event, bool deleteWhenDone) {
     handleScheduling(0, TIME_MICROS, true);
     this->eventRef = event;
-    this->executeMode = deleteWhenDone ? ExecutionType(EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EVENT;
+    this->executeMode = deleteWhenDone ? static_cast<ExecutionType>(EXECTYPE_EVENT | EXECTYPE_DELETE_ON_DONE) : EXECTYPE_EVENT;
 }
 
 unsigned long TimerTask::microsFromNow() {
@@ -88,8 +88,7 @@ void TimerTask::execute() {
 
     if(!isEnabled()) return;
 
-    auto execType = (ExecutionType) (executeMode & EXECTYPE_MASK);
-    switch (execType) {
+    switch (static_cast<ExecutionType>(executeMode & EXECTYPE_MASK)) {
         case EXECTYPE_EVENT:
             processEvent();
             return;
@@ -138,7 +137,8 @@ void TimerTask::processEvent() {
 }
 
 bool TimerTask::isRepeating() const {
-    if(ExecutionType(executeMode & EXECTYPE_MASK) == EXECTYPE_EVENT) {
+    if(static_cast<ExecutionType>(executeMode & EXECTYPE_MASK) == EXECTYPE_EVENT) {
+        if (!eventRef) return false;
         // if it's an event it repeats until the event is considered "complete"
         return !eventRef->isComplete();
     }

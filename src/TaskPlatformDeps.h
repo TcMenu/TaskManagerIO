@@ -27,7 +27,7 @@ class TimerTask;
 #if defined(BUILD_FOR_PICO_CMAKE)
 #include <pico/stdlib.h>
 #include <valarray>
-#elif !defined(__MBED__) && !defined(BUILD_FOR_STM32CUBE_CMAKE)
+#elif !defined(__MBED__) && !defined(BUILD_FOR_STM32CUBE_CMAKE) && !defined(BUILD_FOR_NATIVE_PLATFORM)
 #include <Arduino.h>
 #endif
 
@@ -52,6 +52,8 @@ typedef uint8_t pintype_t;
 #define IOA_USE_ARDUINO
 #define BOARD_SUPPORTS_PROPER_CAS
 #include "platform/wrapAtomic.h"
+#elif defined(BUILD_FOR_NATIVE_PLATFORM)
+#include "platform/nativePlatform.h"
 #else
 #include "platform/arduinoFallback.h"
 #endif // All platform checks

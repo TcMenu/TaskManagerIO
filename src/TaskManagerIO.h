@@ -338,12 +338,13 @@ public:
      * Reset the task manager such that all current tasks are cleared, back to power on state.
      */
     void reset() {
+        // the queue must be completely cleared.
+        tm_internal::atomicWritePtr(&first, nullptr);
+
         // all the slots should be cleared
         for(taskid_t i =0; i<numberOfBlocks; i++) {
             taskBlocks[i]->clearAll();
         }
-        // the queue must be completely cleared too.
-        tm_internal::atomicWritePtr(&first, nullptr);
     }
 
     /**
@@ -370,7 +371,7 @@ public:
      * @param task the task's ID
      * @return the task or nullptr.
      */
-    TimerTask* getTask(taskid_t task);
+    TimerTask* getTask(taskid_t task) const;
 
     /**
      * Gets the number of microseconds as an unsigned long to the next task execution.

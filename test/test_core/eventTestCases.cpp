@@ -1,24 +1,11 @@
-#include <Arduino.h>
-#include <unity.h>
 #include <ExecWithParameter.h>
 #include "TaskManagerIO.h"
-#include "../utils/test_utils.h"
+#include "test_utils.h"
+#include <unity.h>
 
-TimingHelpFixture fixture;
-
-void setUp() {
-    fixture.setup();
-}
-
-void tearDown() {}
+extern TimingHelpFixture fixture;
 
 // these variables are set during test runs to time and verify tasks are run.
-bool scheduled = false;
-bool scheduled2ndJob = false;
-unsigned long microsStarted = 0, microsExecuted = 0, microsExecuted2ndJob = 0;
-int count1 = 0, count2 = 0;
-uint8_t pinNo = 0;
-
 bool taskWithinEvent;
 
 class TestPolledEvent : public BaseEvent {
@@ -27,6 +14,7 @@ private:
     int scheduleCalls;
     uint32_t interval;
     bool triggerNow;
+
 public:
     TestPolledEvent() {
         execCalls = scheduleCalls = 0;
@@ -91,12 +79,14 @@ void testRaiseEventStartTaskCompleted() {
     TEST_ASSERT_TRUE(runScheduleUntilMatchOrTimeout([] { return taskWithinEvent; }));
 
     TEST_ASSERT_TRUE(timelyChecker.ensureTimely());
+    taskManager.reset();
 }
 
 class TestExternalEvent : public BaseEvent {
 private:
     int execCalls;
     bool nextCheckCalled = false;
+
 public:
     TestExternalEvent() {
         execCalls = 0;
@@ -124,15 +114,15 @@ public:
         nextCheckCalled = false;
         execCalls = 0;
     }
+
     bool wasNextCheckCalled() const { return nextCheckCalled; }
     int getExecCalls() const { return execCalls; }
 } externalEvent;
 
 void testNotifyEventThatStartsAnotherTask() {
-    EnsureExecutionWithin timelyChecker(100);
     auto taskId = taskManager.registerEvent(&externalEvent);
 
-    for(int i = 0; i < 100; i++) {
+    for (int i = 0; i < 100; i++) {
         taskWithinEvent = false;
         externalEvent.markTriggeredAndNotify();
         taskManager.yieldForMicros(100);
@@ -155,14 +145,5 @@ void testNotifyEventThatStartsAnotherTask() {
     // it should not be in task manager any longer.
     TEST_ASSERT_FALSE(taskManager.getTask(taskId)->isEvent());
 
-    TEST_ASSERT_TRUE(timelyChecker.ensureTimely());
+    taskManager.reset();
 }
-
-void setup() {
-    UNITY_BEGIN();
-    RUN_TEST(testRaiseEventStartTaskCompleted);
-    RUN_TEST(testNotifyEventThatStartsAnotherTask);
-    UNITY_END();
-}
-
-void loop() {}

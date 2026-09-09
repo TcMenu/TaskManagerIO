@@ -1,12 +1,7 @@
-#include <Arduino.h>
-#include <unity.h>
 #include <SimpleSpinLock.h>
 #include "TaskManagerIO.h"
-#include "../utils/test_utils.h"
-
-void setUp() {}
-
-void tearDown() {}
+#include "test_utils.h"
+#include <unity.h>
 
 SimpleSpinLock testLock;
 taskid_t runTaskId1;
@@ -57,12 +52,5 @@ void testGettingRunningTaskAlwaysCorrect() {
     TEST_ASSERT_TRUE(task2RunningPtrCheck);
     TEST_ASSERT_GREATER_THAN(30, runCount1);
     TEST_ASSERT_GREATER_THAN(250, runCount2);
+    taskManager.reset();
 }
-
-void setup() {
-    UNITY_BEGIN();
-    RUN_TEST(testGettingRunningTaskAlwaysCorrect);
-    UNITY_END();
-}
-
-void loop() {}
