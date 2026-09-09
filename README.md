@@ -1,5 +1,6 @@
 ## TaskManagerIO scheduling and event based library for Arudino and mbed
 [![Build](https://github.com/TcMenu/TaskManagerIO/actions/workflows/build.yml/badge.svg)](https://github.com/TcMenu/TaskManagerIO/actions/workflows/build.yml)
+[![Native C++ Tests](https://github.com/TcMenu/tcLibraryDev/actions/workflows/native-tests.yml/badge.svg)](https://github.com/TcMenu/tcLibraryDev/actions/workflows/native-tests.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache--2.0-green.svg)](https://github.com/TcMenu/TaskManagerIO/blob/main/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/TcMenu/TaskManagerIO.svg?maxAge=3600)](https://github.com/TcMenu/TaskManagerIO/releases)
 [![davetcc](https://img.shields.io/badge/davetcc-dev-blue.svg)](https://github.com/davetcc)
