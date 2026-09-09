@@ -8,7 +8,7 @@
  * if needed too, so there's no need in most cases to fiddle directly with the sizes.
  *
  * The only limitation of putting an item into the btree is that the method getKey() must be implemented by the type
- * that is stored. You can see the default sizes of the list and other parameters in file SimpleCollections.h for
+ * that is stored. You can see the default sizes of the list and other parameters in file BTreeList.h for
  * advanced users.
  *
  * It is only designed to store small, simple class types that are not polymorphic, however, you can wrap a pointer
@@ -19,7 +19,7 @@
  */
 
 #include <Arduino.h>
-#include <SimpleCollections.h>
+#include <BTreeList.h>
 
 class MyStorage {
 private:

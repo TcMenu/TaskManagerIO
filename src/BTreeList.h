@@ -4,7 +4,7 @@
  */
 
 /**
- * @file SimpleCollections.h
+ * @file BTreeList.h
  * @brief memory efficient collections for use on all embedded devices.
  */
 

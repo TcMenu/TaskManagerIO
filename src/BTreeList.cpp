@@ -8,7 +8,7 @@
 #elif !defined (BUILD_FOR_NATIVE_PLATFORM)
 #include <malloc.h>
 #endif
-#include "SimpleCollections.h"
+#include "BTreeList.h"
 
 using namespace ioaTreeInternal;
 using namespace tccollection;
