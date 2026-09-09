@@ -16,7 +16,7 @@ if (BUILD_FOR_STM32CUBE)
             PUBLIC BUILD_FOR_STM32CUBE_CMAKE=1 IO_LOGGING_DEBUG=1
     )
 elseif (BUILD_NATIVE_TESTS)
-    target_compile_definitions(TcMenuLog
+    target_compile_definitions(TaskManagerIO
             PUBLIC BUILD_FOR_NATIVE_PLATFORM=1 IO_LOGGING_DEBUG=1
     )
 else ()
