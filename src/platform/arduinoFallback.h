@@ -37,35 +37,46 @@ namespace tm_internal {
         return *ptr;
     }
 
-    inline bool atomicRead32(const volatile uint32_t *ptr) {
-        return *ptr;
-    }
-
     inline void atomicWriteBool(volatile bool *ptr, bool newVal) {
         *ptr = newVal;
     }
 
 #if defined(__AVR__)
+#include <util/atomic.h>
     inline void atomicWritePtr(TimerTaskAtomicPtr* pPtr, TimerTask* newValue) {
-        noInterrupts();
-        *pPtr = newValue;
-        interrupts();
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+            *pPtr = newValue;
+        }
     }
 
     inline TimerTask* atomicReadPtr(TimerTaskAtomicPtr* pPtr) {
-        noInterrupts();
-        auto ptr = *pPtr;
-        interrupts();
-        return ptr;
+        TimerTask* val;
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+            val = *pPtr;
+        }
+        return val;
     }
+
+    inline uint32_t atomicRead32(const volatile uint32_t *ptr) {
+        uint32_t val;
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+             val = *ptr;
+        }
+        return val;
+    }
+
 #else
-    // all other supported Arduino boards are atomic for pointer types
+    // Assumption: all other supported Arduino boards are atomic for 32-bit values
     inline void atomicWritePtr(TimerTaskAtomicPtr* pPtr, TimerTask* newValue) {
         *pPtr = newValue;
     }
 
     inline TimerTask* atomicReadPtr(TimerTaskAtomicPtr* pPtr) {
-        return *pPtr;
+        return *(volatile TimerTask* const volatile *)pPtr;
+    }
+
+    inline uint32_t atomicRead32(const volatile uint32_t *ptr) {
+        return *ptr;
     }
 #endif // AVR check for PTR atomicity
 
