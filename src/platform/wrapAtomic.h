@@ -27,6 +27,7 @@ namespace tm_internal {
         return ret;
     }
 #else
+#include "EmulatedAtomicBlock.h"
     /**
      * Sets the integer to the new value ONLY when the existing value matches expected.
      * @param ptr the memory location to compare / swap
@@ -37,12 +38,13 @@ namespace tm_internal {
     inline bool atomicSwap32(std::atomic<uint32_t> *ptr, uint32_t expected, uint32_t newValue) {
         // compare and swap is not implemented on ESP8266
         auto ret = false;
-        noInterrupts();
-        if(ptr->load() == expected) {
-            ptr->store(newValue);
-            ret = true;
+        {
+            EmulatedAtomicBlock block;
+            if(ptr->load() == expected) {
+                ptr->store(newValue);
+                ret = true;
+            }
         }
-        interrupts();
         return ret;
     }
 

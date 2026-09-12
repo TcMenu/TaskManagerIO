@@ -27,31 +27,28 @@ typedef uint8_t pintype_t;
 
 class TmCriticalSectionPico {
 protected:
-    std::atomic<critical_section_t*> theLock;
+    critical_section_t theLock;
 public:
-    explicit TmCriticalSectionPico() = default;
+    explicit TmCriticalSectionPico() {
+        critical_section_init(theLock);
+    };
 
     ~TmCriticalSectionPico() {
         critical_section_deinit(theLock);
-        delete theLock;
     }
 
     [[nodiscard]] critical_section_t* getLock() {
-        if (theLock == nullptr) {
-            theLock = new critical_section_t;
-            critical_section_init(theLock);
-        }
-        return theLock;
+        return &theLock;
     }
 };
 
-extern TmCriticalSectionPico globalPicoCs;
+extern volatile TmCriticalSectionPico* globalPicoCs;
 
 class TmPicoProtector {
     TmCriticalSectionPico* myLock;
 public:
     TmPicoProtector() {
-        myLock = &globalPicoCs;
+        myLock = globalPicoCs;
         critical_section_enter_blocking(myLock->getLock());
     }
 

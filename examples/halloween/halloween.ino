@@ -54,6 +54,9 @@ LedControlTask greenLed(greenLedPin, true);
 LedControlTask yellowLed(yellowLedPin);
 
 void setup() {
+    // always initialise our atomics first before using taskmanager or circular buffer..
+    tmInitAtomics();
+
     // when we initialise them, they start a schedule with task manager.
     blueLed.init();
     redLed.init();

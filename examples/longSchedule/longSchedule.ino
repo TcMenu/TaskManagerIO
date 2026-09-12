@@ -51,6 +51,9 @@ TmLongSchedule onceADaySchedule(makeDaySchedule(1), dailyScheduleFn);
 TmLongSchedule fiveMinsOnceSchedule(makeHourSchedule(0, 5), fiveMinsOnceFn, true);
 
 void setup() {
+    // always initialise our atomics first before using taskmanager or circular buffer..
+    tmInitAtomics();
+
     //Serial.begin(115200);
     Serial1.begin(115200);
 

@@ -107,6 +107,9 @@ ISR_ATTR void interruptHandler() {
 }
 
 void setup() {
+    // always initialise our atomics first.
+    tmInitAtomics();
+
     Serial.begin(115200);
     Serial.println("Starting the event example");
 

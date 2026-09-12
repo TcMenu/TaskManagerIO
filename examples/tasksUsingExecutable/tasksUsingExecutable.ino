@@ -96,6 +96,9 @@ void twoParameterFunction(MoreState* moreState, SharedState* sharedState) {
 }
 
 void setup() {
+    // always initialise our atomics first before using taskmanager or circular buffer..
+    tmInitAtomics();
+
     Serial.begin(115200);
 
     Serial.println("Task example starting..");

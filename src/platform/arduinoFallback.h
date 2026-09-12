@@ -19,20 +19,6 @@ namespace tm_internal {
     typedef volatile uint32_t position_t;
     typedef volatile uint32_t* position_ptr_t;
 
-    template <typename T> static bool atomicSwapAny(volatile T* ptr, T expected, T newValue) {
-        bool ret = false;
-        noInterrupts();
-        if(*ptr == expected) {
-            *ptr = newValue;
-            ret = true;
-        }
-        interrupts();
-        return ret;
-    }
-#define atomicSwapBool(ptr, expected, newValue) atomicSwapAny(ptr, expected, newValue)
-#define atomicSwap32(ptr, expected, newValue) atomicSwapAny(ptr, expected, newValue)
-
-
     inline bool atomicReadBool(const volatile bool *ptr) {
         return *ptr;
     }
@@ -43,6 +29,17 @@ namespace tm_internal {
 
 #if defined(__AVR__)
 #include <util/atomic.h>
+    template <typename T> static bool atomicSwapAny(volatile T* ptr, T expected, T newValue) {
+        bool ret = false;
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+            if(*ptr == expected) {
+                *ptr = newValue;
+                ret = true;
+            }
+        }
+        return ret;
+    }
+
     inline void atomicWritePtr(TimerTaskAtomicPtr* pPtr, TimerTask* newValue) {
         ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
             *pPtr = newValue;
@@ -66,7 +63,7 @@ namespace tm_internal {
     }
 
 #else
-    // Assumption: all other supported Arduino boards are atomic for 32-bit values
+#include "EmulatedAtomicBlock.h"
     inline void atomicWritePtr(TimerTaskAtomicPtr* pPtr, TimerTask* newValue) {
         *pPtr = newValue;
     }
@@ -78,9 +75,23 @@ namespace tm_internal {
     inline uint32_t atomicRead32(const volatile uint32_t *ptr) {
         return *ptr;
     }
+    template <typename T> static bool atomicSwapAny(volatile T* ptr, T expected, T newValue) {
+        bool ret = false;
+        {
+            EmulatedAtomicBlock ib;
+            if(*ptr == expected) {
+                *ptr = newValue;
+                ret = true;
+            }
+        }
+        return ret;
+    }
 #endif // AVR check for PTR atomicity
 
 }
+
+#define atomicSwapBool(ptr, expected, newValue) atomicSwapAny(ptr, expected, newValue)
+#define atomicSwap32(ptr, expected, newValue) atomicSwapAny(ptr, expected, newValue)
 
 #endif
 

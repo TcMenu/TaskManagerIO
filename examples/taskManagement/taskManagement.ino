@@ -96,6 +96,9 @@ void tenSecondsUp() {
 }
 
 void setup() {
+    // always initialise our atomics first before using taskmanager or circular buffer..
+    tmInitAtomics();
+
     // start up serial, the first line is for 32 bit boards and may require commenting out on some devices.
     Serial.begin(115200);
 

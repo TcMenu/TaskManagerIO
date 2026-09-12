@@ -50,6 +50,9 @@ void twentySecondJob() {
 // In setup we prepare our tasks, this is what a usual task manager sketch looks like
 //
 void setup() {
+    // always initialise our atomics first before using taskmanager or circular buffer..
+    tmInitAtomics();
+
     Serial.begin(115200);
 
     taskManager.schedule(repeatMicros(100), []{

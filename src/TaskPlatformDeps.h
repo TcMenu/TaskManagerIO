@@ -14,6 +14,10 @@
 
 class TimerTask;
 
+// always defined, called from task manager very early on before any other code.
+// and also from any circular buffers. It is always safe to re-call this method.
+inline void tmInitAtomics();
+
 // You can add your own local definitions header file here, this enables you to adjust build flags in environments
 // where there is no easy way to do so with compiler options. Just create an include file "io_local_definitions.h"
 // at the top level of your project source tree. This file will be honoured by all our libraries.

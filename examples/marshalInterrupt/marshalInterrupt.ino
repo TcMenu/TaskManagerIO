@@ -34,6 +34,9 @@ void interruptTask(pintype_t thePin) {
 // Here we set the interrupt task handler, and add the interrupt, the syntax is very similar to attachInterrupt.
 //
 void setup() {
+    // always initialise our atomics first before using taskmanager or circular buffer..
+    tmInitAtomics();
+
     Serial.begin(115200);
     Serial.println("Starting interrupt example");
 

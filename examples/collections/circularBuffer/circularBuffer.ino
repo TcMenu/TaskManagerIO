@@ -26,6 +26,9 @@ void interruptHasOccurred() {
 }
 
 void setup() {
+    // always initialise our atomics first before using taskmanager or circular buffer..
+    tmInitAtomics();
+
     // start up the serial port
     Serial1.begin(115200);
     //  while(!Serial);

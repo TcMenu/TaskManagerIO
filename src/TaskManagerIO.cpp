@@ -120,6 +120,8 @@ taskid_t TaskManager::findFreeTask() {
 }
 
 taskid_t TaskManager::scheduleOnce(uint32_t when, TimerFn timerFunction, TimerUnit timeUnit) {
+    tmInitAtomics();
+
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
@@ -130,6 +132,8 @@ taskid_t TaskManager::scheduleOnce(uint32_t when, TimerFn timerFunction, TimerUn
 }
 
 taskid_t TaskManager::scheduleFixedRate(uint32_t when, TimerFn timerFunction, TimerUnit timeUnit) {
+    tmInitAtomics();
+
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
@@ -140,6 +144,8 @@ taskid_t TaskManager::scheduleFixedRate(uint32_t when, TimerFn timerFunction, Ti
 }
 
 taskid_t TaskManager::scheduleOnce(uint32_t when, Executable* execRef, TimerUnit timeUnit, bool deleteWhenDone) {
+    tmInitAtomics();
+
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
 	    auto task = getTask(taskId);
@@ -150,6 +156,8 @@ taskid_t TaskManager::scheduleOnce(uint32_t when, Executable* execRef, TimerUnit
 }
 
 taskid_t TaskManager::scheduleFixedRate(uint32_t when, Executable* execRef, TimerUnit timeUnit, bool deleteWhenDone) {
+    tmInitAtomics();
+
 	auto taskId = findFreeTask();
 	if (taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
@@ -160,6 +168,8 @@ taskid_t TaskManager::scheduleFixedRate(uint32_t when, Executable* execRef, Time
 }
 
 taskid_t TaskManager::registerEvent(BaseEvent *eventToAdd, bool deleteWhenDone) {
+    tmInitAtomics();
+
     auto taskId = findFreeTask();
     if(taskId != TASKMGR_INVALIDID) {
         auto task = getTask(taskId);
@@ -191,6 +201,8 @@ void TaskManager::cancelTask(taskid_t taskId) {
 }
 
 void TaskManager::yieldForMicros(uint32_t microsToWait) {
+    tmInitAtomics();
+
 	yield();
 
 	auto* prevTask = getRunningTask();

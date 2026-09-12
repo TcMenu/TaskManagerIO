@@ -36,6 +36,9 @@ void nestedFunction() {
 void stateMachineLockingAsync();
 
 void setup() {
+    // always initialise our atomics first before using taskmanager or circular buffer..
+    tmInitAtomics();
+
     Serial.begin(115200);
 
     // start a task that locks the bus, calls a nested function and yields time back to task manager.
