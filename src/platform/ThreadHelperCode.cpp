@@ -8,13 +8,13 @@
 // of absolutely minimal size. It is the class/heap overhead plus the size of the critical section itself.
 //
 volatile TmCriticalSectionPico* globalPicoCs = nullptr;
-inline void tmInitAtomics() {
+void tmInitAtomics() {
     if (globalPicoCs == nullptr) {
         globalPicoCs = new TmCriticalSectionPico();
     }
 }
 #else
-inline void tmInitAtomics() {
+void tmInitAtomics() {
     // nothing to do on most boards
 }
 #endif
