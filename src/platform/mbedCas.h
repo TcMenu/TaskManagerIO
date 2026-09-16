@@ -60,16 +60,16 @@ namespace tm_internal {
     }
 
     /**
-     * Reads the value in an atomic boolean object
+     * Reads the value in an atomic 32-bit object
      */
-    inline bool atomicRead32(position_t *pPtr) {
+    inline uint32_t atomicRead32(const position_t *pPtr) {
         return *pPtr;
     }
 
     /**
      * Reads the value in an atomic boolean object
      */
-    inline bool atomicReadBool(TmAtomicBool *pPtr) {
+    inline bool atomicReadBool(const TmAtomicBool *pPtr) {
         return *pPtr;
     }
 

@@ -35,7 +35,7 @@ void tmInitAtomics();
 #include <Arduino.h>
 #endif
 
-#if defined(__MBED__) && !defined(ARDUINO_PICO_REVISION)
+#if (defined(__MBED__) || defined(ARDUINO_ARCH_MBED) || defined(TMIOA_FORCE_ARDUINO_MBED)) && !defined(ARDUINO_PICO_REVISION)
 #include "platform/mbedCas.h"
 #elif defined(ESP8266)
 #undef  BOARD_SUPPORTS_PROPER_CAS
@@ -130,7 +130,7 @@ typedef uint32_t sched_t;
 #endif // internal_min
 
 #ifndef internal_max
-#define internal_max(a, b)  ((a) < (b) ? (b) : (a));
+#define internal_max(a, b)  ((a) < (b) ? (b) : (a))
 #endif // internal_max
 
 #endif //TASKMANGERIO_PLATFORMDETERMINATION_H
