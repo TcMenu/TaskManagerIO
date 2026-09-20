@@ -30,11 +30,11 @@ protected:
     critical_section_t theLock;
 public:
     explicit TmCriticalSectionPico() {
-        critical_section_init(theLock);
+        critical_section_init(&theLock);
     };
 
     ~TmCriticalSectionPico() {
-        critical_section_deinit(theLock);
+        critical_section_deinit(&theLock);
     }
 
     [[nodiscard]] critical_section_t* getLock() {
@@ -48,7 +48,12 @@ class TmPicoProtector {
     TmCriticalSectionPico* myLock;
 public:
     TmPicoProtector() {
-        myLock = globalPicoCs;
+        myLock = const_cast<TmCriticalSectionPico*>(globalPicoCs);
+        critical_section_enter_blocking(myLock->getLock());
+    }
+
+    explicit TmPicoProtector(TmCriticalSectionPico* cs) {
+        myLock = cs;
         critical_section_enter_blocking(myLock->getLock());
     }
 
