@@ -141,7 +141,7 @@ Community questions can be asked in the discussions section of this repo, or usi
 
 We must understand that this list is associative and sorted by a key, it is based on a binary search algorithm, so it is relatively slow to insert into the underlying array as it will need to be inserted into the array at the right point. However, in return for this, lookup by key is very fast - in big-O notation it is approximately Log(N) or in simple terms to look up in a 256 item list by key would take maximum 8 iterations. However, insertion carries a possible copy penalty if the items need reordering.
 
-All collections in this library are in the namespace tccollection, by default SimpleCollection.h adds a statement to use this namespace automatically.
+All collections in this library are in the namespace tccollection, by default BTreeList.h adds a statement to use this namespace automatically.
 
 ### Restrictions on what you put in the list
 
@@ -242,7 +242,6 @@ There is an example that shows the usage of the circular buffer, but the API is 
 
 We first create an instance and indicate the size needed, the size is fixed and if the writer exceeds the reader, it will wrap and data is lost. See further down for circular buffers of more complex types.
 
-    #include <SimpleCollections.h>
     #include <SCCircularBuffer.h>
 
     SCCircularBuffer buffer(20);
