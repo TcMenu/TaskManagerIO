@@ -10,11 +10,13 @@ TcMenu organisation made this library available for you to use. It takes signifi
 
 <a href="https://www.buymeacoffee.com/davetcc" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
-TaskManagerIO is an evolution of the task management class that was originally situated in IoAbstraction. It is backed by a simple queue that supports: immediate queuing, scheduled tasks, and events. It is safe to add tasks from another thread, and safe to trigger events from interrupts. However, your tasks are shielded from threads and interrupts making your code simpler.
+TaskManagerIO is backed by a simple queue that supports: immediate queuing, scheduled tasks, and events. It is safe to add tasks from another thread, and safe to trigger events from interrupts. However, your tasks are shielded from threads and interrupts making your code simpler.
 
-We are in a new era of embedded development, where RTOS, multiple threads (and even cores) have become a relatity. Any viable task manager needs to be capable in these environments, while still protecting tasks from multithreaded concerns. We are pleased to say, this version meets both goals. Importantly, any sketch that worked on IoAbstraction task manager will work with this library unaffected. 
+If you've run into issues with `SimpleCollections`, see the section on [Simple Collections](#simple-collections).
 
-Along with this library working on most Arduino based devices, it is also tested by us on PicoSDK and ESP-IDF with an Arduino component..
+We are in an era of embedded development where RTOS, multiple threads (and even cores) have become a reality. Any viable task manager needs to be capable in these environments, while still protecting tasks from multithreaded concerns. Your tasks run on a single thread, so you don't need to worry about memory visibility. However, you can add tasks, trigger events, and read/write circular queues from more than one thread.
+
+This library works on Arduino, PicoSDK, STM32Cube, mbed, and ESP-IDF. You can see the full list of supported platforms in our [libraries overview page](https://www.thecoderscorner.com/products/arduino-libraries/).
 
 Below, we list the main features of TaskManagerIO:
 
@@ -135,13 +137,16 @@ Community questions can be asked in the discussions section of this repo, or usi
 
 * [discussions section of the Task Manager repo](https://github.com/TcMenu/TaskManagerIO/discussions)
 * [Arduino discussion forum](https://forum.arduino.cc/) where questions can be asked, please tag me using `@davetcc`.
-* [Legacy discussion forum probably to be made read only soon](https://www.thecoderscorner.com/jforum/).
+
+## Simple Collections
+
+NOTE: `SimpleCollections` has been moved to `TaskManagerIO` as of version 5.0. This is to reduce the maintenance cost of handling atomics separately in two libraries. Once you move to 5.0.0, delete the `SimpleCollections` library to avoid the risk of two different implementations conflicting.
 
 ## Creating and using a list
 
-We must understand that this list is associative and sorted by a key, it is based on a binary search algorithm, so it is relatively slow to insert into the underlying array as it will need to be inserted into the array at the right point. However, in return for this, lookup by key is very fast - in big-O notation it is approximately Log(N) or in simple terms to look up in a 256 item list by key would take maximum 8 iterations. However, insertion carries a possible copy penalty if the items need reordering.
+Firstly, note that this list is associative and sorted by a key, it is based on a binary search algorithm, so it is relatively slow to insert into the underlying array as it will need to be inserted into the array at the right point. However, in return for this, lookup by key is very fast - in big-O notation it is approximately Log(N) or in simple terms to look up in a 256 item list by key would take maximum 8 iterations. However, insertion carries a possible copy penalty if the items need reordering.
 
-All collections in this library are in the namespace tccollection, by default BTreeList.h adds a statement to use this namespace automatically.
+All collections in this library are in the namespace tccollection, by default `BTreeList.h` adds a statement to use this namespace automatically.
 
 ### Restrictions on what you put in the list
 
@@ -234,7 +239,7 @@ Where the size is the initial capacity of the list, and the grow by mode is one 
 
 ## Concurrent Circular Buffers
 
-This library also supports concurrent circular buffers that work on most boards listed below. These buffers have independent writer and reader positions. This means that one thread can offer data, and another thread can read that data. It is entirely non-blocking and therefore safe across threads or even in interrupts. Be aware that if used in interrupts, the writer position is managed using CAS instructions (or emulation thereof) and will be slow if more than one thread does the writing (because of busy spin waiting).
+This library also supports concurrent circular buffers that work on most boards listed below. These buffers have independent writer and reader positions. This means that one thread can offer data, and another thread can read that data. It is entirely non-blocking and therefore safe across threads or even in interrupts. Be aware that if used in interrupts, the writer position is managed using CAS instructions (or emulation thereof). It is best used SPSC (single producer with a single consumer).
 
 There is an example that shows the usage of the circular buffer, but the API is really simple.
 
