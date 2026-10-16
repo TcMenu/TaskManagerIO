@@ -11,10 +11,7 @@ jobs:
           - examples/halloween/halloween.ino
           - examples/longSchedule/longSchedule.ino
           - examples/marshalInterrupt/marshalInterrupt.ino
-          # MBED
-          # - examples/mbed5NonRtos
-          # - examples/mbedRtos
-          - examples/reentrantLocking/reentrantLocking.ino
+          - examples/lockingMutex/lockingMutex.ino
           - examples/simpleTasks/simpleTasks.ino
           - examples/taskManagement/taskManagement.ino
           - examples/tasksUsingExecutable/tasksUsingExecutable.ino
