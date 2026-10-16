@@ -32,29 +32,23 @@ void yield() {
 
 TaskManager taskManager;
 
-class TmSpinLock {
-private:
-    tm_internal::TmAtomicBool* lockObject;
-public:
-    explicit TmSpinLock(tm_internal::TmAtomicBool* toLockOn) : lockObject(toLockOn) {
-        bool locked;
-        int count = 0;
-        do {
-            locked = tm_internal::atomicSwapBool(lockObject, false, true);
-            if(!locked) {
-                yield(); // something else has the lock, let it get control to finish up!
-                if(++count == 1000) serlogF(SER_WARNING, "TM spin>1000");
-            }
-        } while(!locked);
-    }
-
-    ~TmSpinLock() {
-        if(!tm_internal::atomicSwapBool(lockObject, true, false)) {
-            serlogF(SER_ERROR, "TM lock fail");
+TmSpinLock::TmSpinLock(tm_internal::TmAtomicBool* toLockOn) : lockObject(toLockOn) {
+    bool locked;
+    int count = 0;
+    do {
+        locked = tm_internal::atomicSwapBool(lockObject, false, true);
+        if(!locked) {
+            yield(); // something else has the lock, let it get control to finish up!
+            if(++count == 1000) serlogF(SER_WARNING, "TM spin>1000");
         }
-    }
-};
+    } while(!locked);
+}
 
+TmSpinLock::~TmSpinLock() {
+    if(!tm_internal::atomicSwapBool(lockObject, true, false)) {
+        serlogF(SER_ERROR, "TM lock fail");
+    }
+}
 
 ISR_ATTR void TaskManager::markInterrupted(pintype_t interruptNo) {
 	taskManager.lastInterruptTrigger = interruptNo;

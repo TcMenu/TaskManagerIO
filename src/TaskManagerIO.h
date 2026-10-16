@@ -101,6 +101,21 @@ public:
 };
 
 /**
+ * A very simple spin lock that's normally used within task manager. However it can be used elsewhere if it is useful.
+ * It will wait and take the lock in the constructor. Then until it is destroyed it will hold the lock. It follows the
+ * RAII pattern so ensure it is wrapped in a scope as small as possible.
+ *
+ * The lock object provided must be both globally available, and initialized to `false` before first use.
+ */
+class TmSpinLock {
+private:
+    tm_internal::TmAtomicBool* lockObject;
+public:
+    explicit TmSpinLock(tm_internal::TmAtomicBool* toLockOn);
+    ~TmSpinLock();
+};
+
+/**
  * Create a repeating time period for scheduling in seconds
  * @param seconds the number of seconds to schedule in
  * @return the time period for scheduling.

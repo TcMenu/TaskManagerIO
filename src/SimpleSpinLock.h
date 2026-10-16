@@ -9,10 +9,9 @@
 #include "TaskManagerIO.h"
 
 /**
- * A very simple lock that can be used to provide a very simple mutex like behaviour based on task manager
- * atomic constructs. It has the ability to try and spin lock, and also to fully lock in conjunction with
- * TaskMgrLock class. Use only for activities that do not take very long, it cannot relinquish control to
- * task manager, it freezes the bus when locked. You must never call yieldForMicros while locked.
+ * @deprecated SimpleSpinLock is deprecated for future removal as it is unsafe, use TmSpinLock instead from tm-core
+ * This overly complex locking facility is actually dangerous and likely to result in race conditions. Instead use
+ * the task manager atomic constructs or TmSpinLock to construct a similar but safer locking strategy.
  */
 class SimpleSpinLock {
 private:
@@ -63,18 +62,9 @@ public:
 };
 
 /**
+ * @deprecated SimpleSpinLock is deprecated for future removal as it is unsafe, use TmSpinLock instead from tm-core
  * A wrapper around the task manager locking facilities that allow you to lock within a block of code by putting
  * an instance on the stack. Be very careful not to use yieldForMicros along with this method of locking.
- * For example:
- *
- * ```
- * SimpleSpinLock myLock;
- * void myFunctionToLock() {
- *     TaskSafeLock(myLock);
- *     // do some work that needs the lock here. lock will always be released.
- *     // never use yieldForMicros(..) here or your code may deadlock.
- * }
- * ```
  */
 class TaskMgrLock {
 private:
