@@ -9,9 +9,16 @@
 #include "TaskManagerIO.h"
 
 /**
- * @deprecated SimpleSpinLock is deprecated for future removal as it is unsafe, use TmSpinLock instead from tm-core
- * This overly complex locking facility is actually dangerous and likely to result in race conditions. Instead use
- * the task manager atomic constructs or TmSpinLock to construct a similar but safer locking strategy.
+ * @deprecated SimpleSpinLock is deprecated for removal in 5.1.x. New code should use `TmSpinLock` instead.
+ * This overly complex locking facility was always experimental, and never used by TaskManager itself. It is actually
+ * dangerous and likely to result in race conditions. If you wish to use it beyond 5.1.x, you'll need to copy this code
+ * into your own project.
+ *
+ * Instead we recommend:
+ *
+ * * For simple cases: task manager atomic constructs or TmSpinLock to construct a similar but safer locking strategy.
+ * * For more complex cases: consider using a full platform provided mutex or other synchronization primitive.
+ *
  */
 class SimpleSpinLock {
 private:

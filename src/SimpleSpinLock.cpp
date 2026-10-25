@@ -3,6 +3,8 @@
  * This product is licensed under an Apache license, see the LICENSE file in the top-level directory.
  */
 
+// See deprecation warning for this class in the header file.
+
 #include "SimpleSpinLock.h"
 
 bool SimpleSpinLock::tryLock() {
@@ -17,7 +19,9 @@ bool SimpleSpinLock::tryLock() {
 
 bool SimpleSpinLock::spinLock(unsigned long iterations) {
     if(tryLock()) {
-        ++count;
+        // this change does not fix the underlying issue, it is to prevent compilation errors
+        // we strongly recommend moving immediately to TmSpinLock which is completely safe.
+        count = count + 1;
         return true;
     }
 
@@ -28,7 +32,9 @@ bool SimpleSpinLock::spinLock(unsigned long iterations) {
 #if defined(IOA_MULTITHREADED)
             currentThread = (void*)getCurrentThreadId();
 #endif
-            ++count;
+            // this change does not fix the underlying issue, it is to prevent compilation errors
+            // we strongly recommend moving immediately to TmSpinLock which is completely safe.
+            count = count + 1;
             return true;
         }
         else {
@@ -45,7 +51,9 @@ void SimpleSpinLock::unlock() {
         return;
     }
 
-    --count;
+    // this change does not fix the underlying issue, it is to prevent compilation errors
+    // we strongly recommend moving immediately to TmSpinLock which is completely safe.
+    count = count - 1;
 
     if(count == 0) {
         tm_internal::atomicWritePtr(&initiatingTask, nullptr);
