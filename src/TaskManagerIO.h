@@ -58,6 +58,8 @@ typedef void (*InterruptFn)(pintype_t pin);
  */
 class InterruptAbstraction {
 public:
+    virtual ~InterruptAbstraction() = default;
+
     /**
      * Register an interrupt handler to a specific pin on the device, such that the interrupt handler function will
      * be triggered when mode is true. Mode can be one of CHANGE, RISING, FALLING.
@@ -87,15 +89,15 @@ public:
     TimePeriod(const TimePeriod& other) =default;
     TimePeriod& operator= (const TimePeriod& other) =default;
 
-    uint32_t getAmount() const {
+    [[nodiscard]] uint32_t getAmount() const {
         return amount;
     }
 
-    TimerUnit getUnit() const {
+    [[nodiscard]] TimerUnit getUnit() const {
         return (TimerUnit)unit;
     }
 
-    bool getRepeating() const {
+    [[nodiscard]] bool getRepeating() const {
         return repeating != 0;
     }
 };
@@ -172,7 +174,7 @@ inline TimePeriod onceMillis(uint32_t millis) { return {millis, TIME_MILLIS, fal
 
 /**
  * Create a time period for scheduling once in microseconds
- * @param millis the number of microseconds to schedule in
+ * @param micros the number of microseconds to schedule in
  * @return the time period for scheduling.
  */
 inline TimePeriod onceMicros(uint32_t micros) { return {micros, TIME_MICROS, false}; }
@@ -194,14 +196,14 @@ class TaskManager {
 protected:
     // the memory that holds all the tasks is an array of task blocks, allocated on demand
     TaskBlock* volatile taskBlocks[DEFAULT_TASK_BLOCKS];  // task blocks never ever move in memory, they are not volatile but the pointer is
-    volatile taskid_t numberOfBlocks; // this holds the current number of blocks available.
+    tm_internal::TmAtomicUInt32 numberOfBlocks; // this holds the current number of blocks available.
 
     // here we have a linked list of tasks, this linked list is in time order, nearest task first.
-    tm_internal::TimerTaskAtomicPtr first;
+    tm_internal::TimerTaskAtomicPtr  first;
 
     // interrupt handling variables, store the interrupt state and probable pin cause if applicable
-    volatile pintype_t lastInterruptTrigger;
-    volatile bool interrupted;
+    tm_internal::TmAtomicUInt32 lastInterruptTrigger;
+    tm_internal::TmAtomicBool interrupted;
     volatile InterruptFn interruptCallback;
 
     tm_internal::TmAtomicBool memLockerFlag;      // memory and list operations are locked by this flag using the TmSpinLocker
@@ -212,7 +214,9 @@ public:
      * that can run on other threads, for example to process long running tasks that should be processed separately.
      */
     TaskManager();
-    ~TaskManager();
+    virtual ~TaskManager();
+
+    taskid_t allocateTaskIfPossible();
 
     /**
      * Executes a task manager task as soon as possible. Useful to add work into task manager from another thread of
@@ -268,7 +272,7 @@ public:
 
     /**
      * Schedules a task for one shot execution in the timeframe provided.
-     * @param millis the time frame in which to schedule the task
+     * @param when the time frame in which to schedule the task
      * @param timerFunction the function to run at that time
      * @param timeUnit defaults to TIME_MILLIS but can be any of the possible values.
      */
@@ -277,7 +281,7 @@ public:
     /**
      * Schedules a task for one shot execution in the timeframe provided calling back the exec
      * function on the provided class extending Executable.
-     * @param millis the time frame in which to schedule the task
+     * @param when the time frame in which to schedule the task
      * @param execRef a reference to a class extending Executable
      * @param timeUnit defaults to TIME_MILLIS but can be any of the possible values.
      * @param deleteWhenDone default to false, task manager will reclaim the memory when done with this executable.
@@ -286,7 +290,7 @@ public:
 
     /**
      * Schedules a task for repeated execution at the frequency provided.
-     * @param millis the frequency at which to execute
+     * @param when the frequency at which to execute
      * @param timerFunction the function to run at that time
      * @param timeUnit defaults to TIME_MILLIS but can be any of the possible values.
      */
@@ -295,7 +299,7 @@ public:
     /**
      * Schedules a task for repeated execution at the frequency provided calling back the exec
      * method on the provided class extending Executable.
-     * @param millis the frequency at which to execute
+     * @param when the frequency at which to execute
      * @param execRef a reference to a class extending Executable
      * @param timeUnit defaults to TIME_MILLIS but can be any of the possible values.
      * @param deleteWhenDone true if taskManager should call delete on the object when done, otherwise false.
@@ -315,18 +319,18 @@ public:
      * one event has now triggered and needs to be evaluated.
      */
     ISR_ATTR void triggerEvents() {
-        lastInterruptTrigger = 0xff; // 0xff is the shorthand for event trigger basically.
-        interrupted = true;
+        tm_internal::atomicWrite32(&lastInterruptTrigger, 0xff); // 0xff is the shorthand for event trigger basically.
+        tm_internal::atomicWriteBool(&interrupted, true);
     }
 
     /**
      * Adds an interrupt that will be handled by task manager, such that it's marshalled into a task.
      * This registers an interrupt with any IoAbstractionRef.
-     * @param ref the Interrupt abstraction (or IoAbstractionRef) that we want to register the interrupt for
+     * @param interruptAbstraction the Interrupt abstraction (or IoAbstractionRef) that we want to register the interrupt for
      * @param pin the pin upon which to register (on the IoDevice above)
      * @param mode the mode in which to register, eg. CHANGE, RISING, FALLING
      */
-    void addInterrupt(InterruptAbstraction* interruptAbstraction, pintype_t pin, uint8_t mode);
+    void addInterrupt(InterruptAbstraction* interruptAbstraction, pintype_t pin, uint8_t mode) const;
 
     /**
      * Sets the interrupt callback to be used when an interrupt is signalled. Note that you will be
@@ -337,7 +341,15 @@ public:
     void setInterruptCallback(InterruptFn handler);
 
     /**
-     * Stop a task from executing or cancel it from executing again if it is a repeating task
+     * Stop a task from executing by cancelling it. It is cancelled by executing a cancellation task.
+     *
+     * Warning: this presently allocates a new task to ensure the task is never, ever cancelled on anything other than
+     * the task thread. The new task is allocated on the heap and will be deleted by task manager.
+     *
+     * If you find that you are calling cancel task a lot, it may be better to either go with single execution and then
+     * if you still need another loop, then schedule it again. Or to use an event extending from `BaseEvent` instead and
+     * then call `registerEvent` with taskmanager, it is far easier to control events.
+     *
      * @param task the task ID returned from the schedule call
      */
     void cancelTask(taskid_t task);
@@ -377,14 +389,14 @@ public:
         tm_internal::atomicWritePtr(&first, nullptr);
 
         // all the slots should be cleared
-        for(taskid_t i =0; i<numberOfBlocks; i++) {
+        for(taskid_t i =0; i<tm_internal::atomicRead32(&numberOfBlocks); i++) {
             taskBlocks[i]->clearAll();
         }
     }
 
     /**
      * This method fills slotData with the current running conditions of each available task slot.
-     * Useful for debugging purposes, where each task the .
+     * Useful for debugging purposes, but should not be used in production.
      * Key:
      * * 'R' repeating task  ('r' when currently running)
      * * 'U' one shot task ('u' when currently running)
@@ -397,7 +409,7 @@ public:
     /**
      * Gets the first task in the run queue. Not often useful outside of testing.
      */
-    TimerTask* getFirstTask() {
+    [[nodiscard]] TimerTask* getFirstTask() {
         return tm_internal::atomicReadPtr(&first);
     }
 
@@ -406,7 +418,7 @@ public:
      * @param task the task's ID
      * @return the task or nullptr.
      */
-    TimerTask* getTask(taskid_t task) const;
+    [[nodiscard]] TimerTask* getTask(taskid_t task) const;
 
     /**
      * Gets the number of microseconds as an unsigned long to the next task execution.
@@ -425,7 +437,7 @@ public:
      * store this pointer.
      * @return a temporary pointer to the running task that lasts as long as it is running.
      */
-    TimerTask* getRunningTask() { return runningTask; }
+    TimerTask* getRunningTask() { return tm_internal::atomicReadPtr(&runningTask); }
 
     friend class TaskExecutionRecorder;
 private:

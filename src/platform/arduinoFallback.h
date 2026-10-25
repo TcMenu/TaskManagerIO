@@ -17,6 +17,7 @@ namespace tm_internal {
     typedef TimerTask *volatile TimerTaskAtomicPtr;
     typedef volatile bool TmAtomicBool;
     typedef volatile uint32_t position_t;
+    typedef volatile uint32_t TmAtomicUInt32;
     typedef volatile uint32_t* position_ptr_t;
 
     inline bool atomicReadBool(const volatile bool *ptr) {
@@ -54,6 +55,12 @@ namespace tm_internal {
         return val;
     }
 
+    inline void atomicWrite32(volatile uint32_t* atomicType, uint32_t newValue) {
+        ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+            *atomicType = newValue;
+        }
+    }
+
     inline uint32_t atomicRead32(const volatile uint32_t *ptr) {
         uint32_t val;
         ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
@@ -75,6 +82,11 @@ namespace tm_internal {
     inline uint32_t atomicRead32(const volatile uint32_t *ptr) {
         return *ptr;
     }
+
+    inline void atomicWrite32(volatile uint32_t* atomicType, uint32_t newValue) {
+        *atomicType = newValue;
+    }
+
     template <typename T> static bool atomicSwapAny(volatile T* ptr, T expected, T newValue) {
         bool ret = false;
         {

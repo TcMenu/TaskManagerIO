@@ -42,6 +42,7 @@ namespace tm_internal {
     typedef TimerTask* volatile TimerTaskAtomicPtr;
     typedef volatile bool TmAtomicBool;
     typedef volatile uint32_t position_t;
+    typedef volatile uint32_t TmAtomicUInt32;
     typedef volatile uint32_t* position_ptr_t;
 
     /**
@@ -64,6 +65,10 @@ namespace tm_internal {
      */
     inline uint32_t atomicRead32(const position_t *pPtr) {
         return *pPtr;
+    }
+
+    inline void atomicWrite32(volatile position_t *ptr, uint32_t newValue) {
+        *ptr = newValue;
     }
 
     /**

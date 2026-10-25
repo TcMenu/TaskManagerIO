@@ -14,11 +14,11 @@
  * This is only a backup on smaller single core boards that do not fully/cannot fully implement std::atomic
  */
 
+#if !defined(BUILD_FOR_ESP32_IDF) && !defined(BUILD_FOR_STM32CUBE_CMAKE)  && !defined(BUILD_FOR_PICO_CMAKE)
 #include <Arduino.h>
+#endif
 
 #if defined(ESP8266)
-#include <Arduino.h>
-
 class EmulatedAtomicBlock {
 private:
     uint32_t saved_ps;
@@ -76,7 +76,7 @@ public:
     EmulatedAtomicBlock& operator=(const EmulatedAtomicBlock&) = delete;
 };
 
-#elif defined(ESP32)
+#elif defined(ESP32) || defined(BUILD_FOR_ESP32_IDF)
 // for the few ESP32 boards that don't have std::atomic implemented fully
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

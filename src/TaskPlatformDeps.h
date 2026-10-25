@@ -31,7 +31,7 @@ void tmInitAtomics();
 #if defined(BUILD_FOR_PICO_CMAKE)
 #include <pico/stdlib.h>
 #include <valarray>
-#elif !defined(__MBED__) && !defined(BUILD_FOR_STM32CUBE_CMAKE) && !defined(BUILD_FOR_NATIVE_PLATFORM)
+#elif !defined(__MBED__) && !defined(BUILD_FOR_STM32CUBE_CMAKE) && !defined(BUILD_FOR_NATIVE_PLATFORM) && ! defined(BUILD_FOR_ESP32_IDF)
 #include <Arduino.h>
 #endif
 
@@ -58,6 +58,8 @@ typedef uint8_t pintype_t;
 #include "platform/wrapAtomic.h"
 #elif defined(BUILD_FOR_NATIVE_PLATFORM)
 #include "platform/nativePlatform.h"
+#elif defined(BUILD_FOR_ESP32_IDF)
+#include "platform/esp32IdfSupport.h"
 #else
 #include "platform/arduinoFallback.h"
 #endif // All platform checks

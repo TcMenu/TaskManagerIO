@@ -8,6 +8,7 @@ namespace tm_internal {
     typedef std::atomic<TimerTask *> TimerTaskAtomicPtr;
     typedef std::atomic<uint32_t>    TmAtomicBool;
     typedef std::atomic<uint32_t>    position_t;
+    typedef position_t               TmAtomicUInt32;
     typedef std::atomic<uint32_t>*   position_ptr_t;
 
 
@@ -52,6 +53,10 @@ namespace tm_internal {
 
     inline uint32_t atomicRead32(const std::atomic<uint32_t>* atomicType) {
         return atomicType->load();
+    }
+
+    inline void atomicWrite32(std::atomic<uint32_t>* atomicType, uint32_t newValue) {
+        atomicType->store(newValue);
     }
 
     /**

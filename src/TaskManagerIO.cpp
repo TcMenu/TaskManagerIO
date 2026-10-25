@@ -51,63 +51,69 @@ TmSpinLock::~TmSpinLock() {
 }
 
 ISR_ATTR void TaskManager::markInterrupted(pintype_t interruptNo) {
-	taskManager.lastInterruptTrigger = interruptNo;
-	taskManager.interrupted = true;
+	tm_internal::atomicWrite32(&taskManager.lastInterruptTrigger, interruptNo);
+	tm_internal::atomicWriteBool(&taskManager.interrupted, true);
 }
 
 TaskManager::TaskManager() : taskBlocks {} {
-	interrupted = false;
-	tm_internal::atomicWritePtr(&first, nullptr);
 	interruptCallback = nullptr;
-	lastInterruptTrigger = 0;
 	taskBlocks[0] = new TaskBlock(0);
-	numberOfBlocks = 1;
-	runningTask = nullptr;
+	tm_internal::atomicWriteBool(&interrupted, false);
+	tm_internal::atomicWritePtr(&first, nullptr);
+	tm_internal::atomicWrite32(&lastInterruptTrigger ,0);
 	tm_internal::atomicWriteBool(&memLockerFlag, false);
+	tm_internal::atomicWrite32(&numberOfBlocks, 1);
+	tm_internal::atomicWritePtr(&runningTask, nullptr);
 }
 
 TaskManager::~TaskManager() {
-    for(taskid_t i=0; i<numberOfBlocks; i++) {
+    for(taskid_t i=0; i<tm_internal::atomicRead32(&numberOfBlocks); i++) {
         delete taskBlocks[i];
     }
 }
 
+taskid_t TaskManager::allocateTaskIfPossible() {
+	uint32_t blocksCurrent = tm_internal::atomicRead32(&numberOfBlocks);
+	for (taskid_t i=0; i<blocksCurrent;i++) {
+		auto taskId = taskBlocks[i]->allocateTask();
+		if(taskId != TASKMGR_INVALIDID) {
+			serlogF2(SER_IOA_DEBUG, "TM alloc", taskId);
+			return taskId;
+		}
+	}
+
+	return TASKMGR_INVALIDID;
+}
+
 taskid_t TaskManager::findFreeTask() {
-    int retries = 0;
-    while(retries < 100) {
-        for (taskid_t i=0; i<numberOfBlocks;i++) {
-            auto taskId = taskBlocks[i]->allocateTask();
-            if(taskId != TASKMGR_INVALIDID) {
-                serlogF2(SER_IOA_DEBUG, "TM alloc", taskId);
-                return taskId;
-            }
-        }
+    // try and allocate a task without a lock, return that task if possible
+    if (auto tmId = allocateTaskIfPossible(); tmId != TASKMGR_INVALIDID) return tmId;
 
-        // already full, cannot allocate further.
-        if(numberOfBlocks == DEFAULT_TASK_BLOCKS) {
-            serlogF(SER_ERROR, "TM full");
-            return TASKMGR_INVALIDID;
-        }
+    // now we need to take an atomic lock memLockerFlag before proceeding to ensure nobody else is allocating tasks
+    // if two threads come here at once, only one will be able to enter the allocate block
+    {
+        TmSpinLock spinLock(&memLockerFlag);
+	    // we've been in a potential lock, another thread could well have allocated a task, so try again first.
+	    if (auto tmId = allocateTaskIfPossible(); tmId != TASKMGR_INVALIDID) return tmId;
 
-        // now we need to take an atomic lock memLockerFlag before proceeding to ensure nobody else is allocating tasks
-        // if two threads come here at once, only one will be able to enter the allocate block, the other will go into
-        // the else block and let other tasks run for a while and then loop again
-        {
-            TmSpinLock spinLock(&memLockerFlag);
-            auto nextIdSpace = taskBlocks[numberOfBlocks - 1]->lastSlot() + 1;
-            taskBlocks[numberOfBlocks] = new TaskBlock(nextIdSpace);
-            if(taskBlocks[numberOfBlocks] != nullptr) {
-                serlogF2(SER_IOA_DEBUG, "TM alloc: ", numberOfBlocks);
-                numberOfBlocks++;
-            }
-            else {
-                serlogF(SER_ERROR, "TM full");
-                break;  // no point to continue here, new has failed.
-            }
-        }
+	    // we didn't get a task, and we're already full, so cannot allocate further. Exit with error
+    	auto blockCount = tm_internal::atomicRead32(&numberOfBlocks);
+	    if(blockCount == DEFAULT_TASK_BLOCKS) {
+	    	serlogF(SER_ERROR, "TM full");
+	    	return TASKMGR_INVALIDID;
+	    }
 
-        // count up the tries so far to allocate / wait for allocation.
-        retries++;
+	    // now we need to try and increase the pool size by creating another task block.
+        auto nextIdSpace = taskBlocks[blockCount - 1]->lastSlot() + 1;
+        taskBlocks[blockCount] = new TaskBlock(nextIdSpace);
+        if(taskBlocks[blockCount] != nullptr) {
+            serlogF2(SER_IOA_DEBUG, "TM alloc: ", blockCount);
+        	tm_internal::atomicWrite32(&numberOfBlocks, blockCount + 1);
+		    if (auto tmId = allocateTaskIfPossible(); tmId != TASKMGR_INVALIDID) return tmId;
+        } else {
+            serlogF(SER_ERROR, "TM newFail");
+        	return TASKMGR_INVALIDID;
+        }
     }
 
 	return TASKMGR_INVALIDID;
@@ -183,10 +189,9 @@ void TaskManager::setTaskEnabled(taskid_t taskId, bool ena) {
 }
 
 void TaskManager::cancelTask(taskid_t taskId) {
-    auto task = getTask(taskId);
-    // always create a new task to ensure the task is never, ever cancelled on anything other than the task thread.
-	if (task) {
-	    taskManager.execute(new ExecWith2Parameters<TimerTask*, TaskManager*>([](TimerTask* task, TaskManager* tm) {
+	// always create a new task to ensure the task is never, ever cancelled on anything other than the task thread.
+	if (auto task = getTask(taskId)) {
+	    execute(new ExecWith2Parameters<TimerTask*, TaskManager*>([](TimerTask* task, TaskManager* tm) {
             tm->removeFromQueue(task);
             serlogF(SER_IOA_DEBUG, "TM free");
             task->clear();
@@ -223,10 +228,11 @@ public:
 };
 
 void TaskManager::dealWithInterrupt() {
-    interrupted = false;
-    if(interruptCallback != nullptr) interruptCallback(lastInterruptTrigger);
+    tm_internal::atomicWriteBool(&interrupted, false);
+    if(interruptCallback != nullptr) interruptCallback(tm_internal::atomicRead32(&lastInterruptTrigger));
 
-    auto lastSlot = taskBlocks[numberOfBlocks - 1]->lastSlot() + 1;
+	auto currentBlocks = tm_internal::atomicRead32(&numberOfBlocks);
+    auto lastSlot = taskBlocks[currentBlocks - 1]->lastSlot() + 1;
     for(taskid_t i=0; i<lastSlot; i++) {
         auto* task = getTask(i);
         if(task->isInUse() && task->isEvent()) {
@@ -243,7 +249,7 @@ void TaskManager::dealWithInterrupt() {
                 }
             }
             else {
-                interrupted = true; // we have to assume we still need to process this event next time around.
+                tm_internal::atomicWriteBool(&interrupted, true); // we have to assume we still need to process this event next time around.
             }
         }
     }
@@ -251,7 +257,7 @@ void TaskManager::dealWithInterrupt() {
 
 void TaskManager::runLoop() {
 	// when there's an interrupt, we marshall it into a timer interrupt.
-	if (interrupted) dealWithInterrupt();
+	if (tm_internal::atomicReadBool(&interrupted)) dealWithInterrupt();
 
 	// go through the timer (scheduled) tasks in priority order. they are stored
 	// in a linked list ordered by first to be scheduled. So we only go through
@@ -366,58 +372,58 @@ void TaskManager::removeFromQueue(TimerTask* tm) {
 }
 
 ISR_ATTR void interruptHandler1() {
-	taskManager.markInterrupted(1);
+	TaskManager::markInterrupted(1);
 }
 ISR_ATTR void interruptHandler2() {
-	taskManager.markInterrupted(2);
+	TaskManager::markInterrupted(2);
 }
 ISR_ATTR void interruptHandler3() {
-	taskManager.markInterrupted(3);
+	TaskManager::markInterrupted(3);
 }
 ISR_ATTR void interruptHandler4() {
-	taskManager.markInterrupted(4);
+	TaskManager::markInterrupted(4);
 }
 ISR_ATTR void interruptHandler5() {
-	taskManager.markInterrupted(5);
+	TaskManager::markInterrupted(5);
 }
 ISR_ATTR void interruptHandler6() {
-	taskManager.markInterrupted(6);
+	TaskManager::markInterrupted(6);
 }
 ISR_ATTR void interruptHandler7() {
-	taskManager.markInterrupted(7);
+	TaskManager::markInterrupted(7);
 }
 ISR_ATTR void interruptHandler8() {
-	taskManager.markInterrupted(8);
+	TaskManager::markInterrupted(8);
 }
 ISR_ATTR void interruptHandler9() {
-	taskManager.markInterrupted(9);
+	TaskManager::markInterrupted(9);
 }
 ISR_ATTR void interruptHandler10() {
-	taskManager.markInterrupted(10);
+	TaskManager::markInterrupted(10);
 }
 ISR_ATTR void interruptHandler11() {
-	taskManager.markInterrupted(11);
+	TaskManager::markInterrupted(11);
 }
 ISR_ATTR void interruptHandler12() {
-	taskManager.markInterrupted(12);
+	TaskManager::markInterrupted(12);
 }
 ISR_ATTR void interruptHandler13() {
-	taskManager.markInterrupted(13);
+	TaskManager::markInterrupted(13);
 }
 ISR_ATTR void interruptHandler14() {
-	taskManager.markInterrupted(14);
+	TaskManager::markInterrupted(14);
 }
 ISR_ATTR void interruptHandler15() {
-	taskManager.markInterrupted(15);
+	TaskManager::markInterrupted(15);
 }
 ISR_ATTR void interruptHandler18() {
-	taskManager.markInterrupted(18);
+	TaskManager::markInterrupted(18);
 }
 ISR_ATTR void interruptHandlerOther() {
-	taskManager.markInterrupted(0xff);
+	TaskManager::markInterrupted(0xff);
 }
 
-void TaskManager::addInterrupt(InterruptAbstraction* ioDevice, pintype_t pin, uint8_t mode) {
+void TaskManager::addInterrupt(InterruptAbstraction* ioDevice, pintype_t pin, uint8_t mode) const {
 	if (interruptCallback == nullptr) return;
 
 	switch (pin) {
@@ -446,10 +452,11 @@ void TaskManager::setInterruptCallback(InterruptFn handler) {
 }
 
 char* TaskManager::checkAvailableSlots(char* data, size_t dataSize) const {
-    auto maxLen = internal_min(taskid_t(dataSize - 1), taskBlocks[numberOfBlocks - 1]->lastSlot());
+	auto currentBlocks = tm_internal::atomicRead32(&this->numberOfBlocks);
+    auto maxLen = internal_min(taskid_t(dataSize - 1), taskBlocks[currentBlocks - 1]->lastSlot());
     size_t position = 0;
 
-    for(taskid_t i=0; i<numberOfBlocks;i++) {
+    for(taskid_t i=0; i<currentBlocks;i++) {
 	    auto last = taskBlocks[i]->lastSlot() + 1;
 	    for(taskid_t j=taskBlocks[i]->firstSlot(); j < last; j++) {
 	        auto task = taskBlocks[i]->getContainedTask(j);
@@ -464,7 +471,8 @@ char* TaskManager::checkAvailableSlots(char* data, size_t dataSize) const {
 }
 
 TimerTask *TaskManager::getTask(taskid_t taskId) const {
-    for(taskid_t i=0; i<numberOfBlocks; i++) {
+	uint32_t currentNumBlocks = tm_internal::atomicRead32(&this->numberOfBlocks);
+    for(taskid_t i=0; i<currentNumBlocks; i++) {
         auto possibleTask = taskBlocks[i]->getContainedTask(taskId);
         if(possibleTask != nullptr) return possibleTask;
     }
