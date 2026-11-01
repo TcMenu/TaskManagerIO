@@ -32,4 +32,8 @@ inline void delayMicroseconds(uint32_t delay) {
     esp_rom_delay_us(delay);
 }
 
+inline void delay(uint32_t millisToDelay) {
+    vTaskDelay(millisToDelay / portTICK_PERIOD_MS);
+}
+
 #endif
